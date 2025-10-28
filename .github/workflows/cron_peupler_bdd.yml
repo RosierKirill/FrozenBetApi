@@ -1,5 +1,5 @@
 # @format
-name: "🕒 Cron - Peuplement automatique local"
+name: "🕒 Cron - Peuplement automatique (PostgreSQL)"
 
 on:
   schedule:
@@ -18,9 +18,10 @@ concurrency:
 jobs:
   ingest:
     runs-on: ubuntu-latest
+    environment: DATABASE_CONFIG 
 
     env:
-      # 🔹 Variables issues des Secrets (ou du .secrets avec act)
+      # 🔹 Variables issues des Secrets
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       COMPETITIONS_API_URL: ${{ secrets.COMPETITIONS_API_URL }}
       TEAMS_API_URL: ${{ secrets.TEAMS_API_URL }}
@@ -39,44 +40,33 @@ jobs:
       - name: "📦 Install dependencies"
         run: npm ci
 
+      - name: "🧷 Mirror POSTGRES_URL to DATABASE_URL (for Prisma directUrl)"
+        run: |
+          # Prisma lit directUrl=env("POSTGRES_URL") dans ton schema.
+          # On le renseigne avec la même valeur que DATABASE_URL.
+          echo "POSTGRES_URL=${DATABASE_URL}" >> "$GITHUB_ENV"
+
       - name: "🧱 Prisma generate"
         run: npx prisma generate
 
-      # 🗂️ Force un chemin absolu pour SQLite et crée le dossier si besoin
-      - name: "🗂️ Set absolute DATABASE_URL and create folder"
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          mkdir -p "${GITHUB_WORKSPACE}/prisma"
-          echo "DATABASE_URL=file:${GITHUB_WORKSPACE}/prisma/dev.db" >> "$GITHUB_ENV"
-          echo "📁 Base de données : ${GITHUB_WORKSPACE}/prisma/dev.db"
+      # 💡 Si tu utilises des migrations, préfère `migrate deploy`. Sinon garde `db push`.
+      - name: "🗃️ Prisma migrate deploy (prod-safe)"
+        run: npx prisma migrate deploy
 
-      # 🛠️ Remap endpoints pour act (container) : localhost -> host.docker.internal
-      - name: "🛠️ Remap endpoints for act (container)"
-        if: ${{ env.ACT == 'true' }}
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          echo "COMPETITIONS_API_URL=${COMPETITIONS_API_URL/localhost/host.docker.internal}" >> "$GITHUB_ENV"
-          echo "TEAMS_API_URL=${TEAMS_API_URL/localhost/host.docker.internal}" >> "$GITHUB_ENV"
-          echo "MATCHES_API_URL=${MATCHES_API_URL/localhost/host.docker.internal}" >> "$GITHUB_ENV"
+      # - name: "🗃️ Prisma db push (schema sync sans migrations) — alternative"
+      #   run: npx prisma db push
 
-      - name: "🔎 Debug environment variables"
+      - name: "🔎 Debug env (masked)"
         run: |
-          echo "🔧 DATABASE_URL: $DATABASE_URL"
-          echo "🔧 COMPETITIONS_API_URL: $COMPETITIONS_API_URL"
-          echo "🔧 TEAMS_API_URL: $TEAMS_API_URL"
-          echo "🔧 MATCHES_API_URL: $MATCHES_API_URL"
-
-      # 🗃️ Crée le fichier SQLite et pousse le schéma avant l’ingestion
-      - name: "🗃️ Prisma db push (create schema)"
-        run: npx prisma db push
+          echo "🔧 COMPETITIONS_API_URL: ${COMPETITIONS_API_URL}"
+          echo "🔧 TEAMS_API_URL: ${TEAMS_API_URL}"
+          echo "🔧 MATCHES_API_URL: ${MATCHES_API_URL}"
 
       # 🛡️ Skip auto si URLs locales sur runner GitHub (non act)
       - name: "🛡️ Guard: skip when localhost on GitHub-hosted"
         if: ${{ env.ACT != 'true' && (contains(env.COMPETITIONS_API_URL, 'localhost') || contains(env.TEAMS_API_URL, 'localhost') || contains(env.MATCHES_API_URL, 'localhost')) }}
         run: |
-          echo "⚠️ URLs locales détectées (localhost). Exécution ignorée sur runner GitHub car les APIs locales ne sont pas joignables."
+          echo "⚠️ URLs locales détectées (localhost). Exécution ignorée."
           exit 0
 
       # 🔍 Vérifie que les APIs externes répondent avant ingestion
