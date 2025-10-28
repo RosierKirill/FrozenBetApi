@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response } from "express";
 
 export interface SSEClient {
   id: string;
@@ -13,26 +13,30 @@ export class SSEService {
    * Register a new SSE client
    */
   addClient(clientId: string, res: Response, matchIds?: number[]): void {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
 
     // Send initial connection message
-    this.sendToClient(res, 'connected', {
-      message: 'Connected to live scores',
+    this.sendToClient(res, "connected", {
+      message: "Connected to live scores",
       timestamp: new Date().toISOString(),
     });
 
     this.clients.set(clientId, { id: clientId, res, matchIds });
 
     // Remove client on connection close
-    res.on('close', () => {
+    res.on("close", () => {
       this.clients.delete(clientId);
-      console.log(`Client ${clientId} disconnected. Active clients: ${this.clients.size}`);
+      console.log(
+        `Client ${clientId} disconnected. Active clients: ${this.clients.size}`
+      );
     });
 
-    console.log(`Client ${clientId} connected. Active clients: ${this.clients.size}`);
+    console.log(
+      `Client ${clientId} connected. Active clients: ${this.clients.size}`
+    );
   }
 
   /**
@@ -52,7 +56,7 @@ export class SSEService {
     this.clients.forEach((client) => {
       // Send to all clients or only those subscribed to this match
       if (!client.matchIds || client.matchIds.includes(matchId)) {
-        this.sendToClient(client.res, 'score-update', {
+        this.sendToClient(client.res, "score-update", {
           matchId,
           ...scoreData,
           timestamp: new Date().toISOString(),
@@ -61,18 +65,24 @@ export class SSEService {
       }
     });
 
-    console.log(`Score update broadcasted to ${sentCount} clients for match ${matchId}`);
+    console.log(
+      `Score update broadcasted to ${sentCount} clients for match ${matchId}`
+    );
   }
 
   /**
    * Broadcast match status change (scheduled -> live -> finished)
    */
-  broadcastMatchStatusChange(matchId: number, status: string, matchData: any): void {
+  broadcastMatchStatusChange(
+    matchId: number,
+    status: string,
+    matchData: any
+  ): void {
     let sentCount = 0;
 
     this.clients.forEach((client) => {
       if (!client.matchIds || client.matchIds.includes(matchId)) {
-        this.sendToClient(client.res, 'match-status', {
+        this.sendToClient(client.res, "match-status", {
           matchId,
           status,
           ...matchData,
@@ -82,7 +92,9 @@ export class SSEService {
       }
     });
 
-    console.log(`Match status change broadcasted to ${sentCount} clients for match ${matchId}`);
+    console.log(
+      `Match status change broadcasted to ${sentCount} clients for match ${matchId}`
+    );
   }
 
   /**
@@ -90,7 +102,7 @@ export class SSEService {
    */
   sendHeartbeat(): void {
     this.clients.forEach((client) => {
-      this.sendToClient(client.res, 'heartbeat', {
+      this.sendToClient(client.res, "heartbeat", {
         timestamp: new Date().toISOString(),
       });
     });

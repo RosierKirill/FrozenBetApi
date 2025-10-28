@@ -5,6 +5,8 @@ import { sendSuccess } from "../utils/response";
 import {
   createGroupSchema,
   updateGroupSchema,
+  createScoringRuleSchema,
+  updateScoringRuleSchema,
 } from "../validators/group.validator";
 
 const router = Router();
@@ -533,9 +535,12 @@ router.get("/:id/rules", async (req, res, next) => {
  *           schema:
  *             type: object
  *             required:
- *               - ruleDescription
+ *               - ruleType
  *               - points
  *             properties:
+ *               ruleType:
+ *                 type: string
+ *                 enum: [EXACT_SCORE, CORRECT_WINNER, CORRECT_DRAW, GOAL_DIFFERENCE, BOTH_TEAMS_SCORE]
  *               ruleDescription:
  *                 type: string
  *               points:
@@ -554,10 +559,11 @@ router.get("/:id/rules", async (req, res, next) => {
  */
 router.post("/:id/rules", authenticate, async (req: AuthRequest, res, next) => {
   try {
+    const data = createScoringRuleSchema.parse(req.body);
     const rule = await groupService.createScoringRule(
       parseInt(req.params.id),
       req.user!.userId,
-      req.body
+      data
     );
     sendSuccess(res, rule, "Scoring rule created successfully", 201);
   } catch (error) {
@@ -591,6 +597,9 @@ router.post("/:id/rules", authenticate, async (req: AuthRequest, res, next) => {
  *           schema:
  *             type: object
  *             properties:
+ *               ruleType:
+ *                 type: string
+ *                 enum: [EXACT_SCORE, CORRECT_WINNER, CORRECT_DRAW, GOAL_DIFFERENCE, BOTH_TEAMS_SCORE]
  *               ruleDescription:
  *                 type: string
  *               points:
@@ -612,11 +621,12 @@ router.put(
   authenticate,
   async (req: AuthRequest, res, next) => {
     try {
+      const data = updateScoringRuleSchema.parse(req.body);
       const rule = await groupService.updateScoringRule(
         parseInt(req.params.id),
         parseInt(req.params.ruleId),
         req.user!.userId,
-        req.body
+        data
       );
       sendSuccess(res, rule, "Scoring rule updated successfully");
     } catch (error) {

@@ -12,6 +12,18 @@ datasource db {
 }
 
 // ============================================
+// ENUMS
+// ============================================
+
+enum RuleType {
+  EXACT_SCORE        // Score exact
+  CORRECT_WINNER     // Bon vainqueur
+  CORRECT_DRAW       // Match nul correct
+  GOAL_DIFFERENCE    // Difference de buts correcte
+  BOTH_TEAMS_SCORE   // Les deux equipes marquent
+}
+
+// ============================================
 // MODELS - PLATEFORME DE PRONOSTICS FrozenBet
 // ============================================
 
@@ -119,6 +131,7 @@ model Group {
 model GroupScoringRule {
   id              Int      @id @default(autoincrement())
   groupId         Int      @map("group_id")
+  ruleType        RuleType @map("rule_type")
   ruleDescription String?  @map("rule_description")
   points          Int
   createdAt       DateTime @default(now()) @map("created_at")

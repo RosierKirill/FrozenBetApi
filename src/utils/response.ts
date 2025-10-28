@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response } from "express";
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -24,9 +24,9 @@ export interface ApiError {
 export const sendSuccess = <T>(
   res: Response,
   data: T,
-  message = 'Success',
+  message = "Success",
   statusCode = 200,
-  meta?: ApiResponse['meta']
+  meta?: ApiResponse["meta"]
 ): Response => {
   const response: ApiResponse<T> = {
     success: true,

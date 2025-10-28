@@ -1,5 +1,5 @@
-import jwt from 'jsonwebtoken';
-import { config } from '../config/env';
+import jwt from "jsonwebtoken";
+import { config } from "../config/env";
 
 export interface JWTPayload {
   userId: number;
@@ -23,6 +23,6 @@ export const verifyToken = (token: string): JWTPayload => {
   try {
     return jwt.verify(token, config.jwt.secret) as JWTPayload;
   } catch (error) {
-    throw new Error('Invalid or expired token');
+    throw new Error("Invalid or expired token");
   }
 };

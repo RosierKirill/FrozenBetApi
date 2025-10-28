@@ -1,27 +1,38 @@
-import prisma from '../config/database';
-import { AppError } from '../middleware/errorHandler';
+import prisma from "../config/database";
+import { AppError } from "../middleware/errorHandler";
 
 export class PredictionService {
-  async createPrediction(userId: number, data: {
-    matchId: number;
-    groupId: number;
-    homeScorePrediction: number;
-    awayScorePrediction: number;
-  }) {
+  async createPrediction(
+    userId: number,
+    data: {
+      matchId: number;
+      groupId: number;
+      homeScorePrediction: number;
+      awayScorePrediction: number;
+    }
+  ) {
     const match = await prisma.match.findUnique({
       where: { id: data.matchId },
     });
 
     if (!match) {
-      throw new AppError(404, 'NOT_FOUND', 'Match not found');
+      throw new AppError(404, "NOT_FOUND", "Match not found");
     }
 
     if (new Date(match.scheduledDate) <= new Date()) {
-      throw new AppError(400, 'BAD_REQUEST', 'Cannot predict after match has started');
+      throw new AppError(
+        400,
+        "BAD_REQUEST",
+        "Cannot predict after match has started"
+      );
     }
 
-    if (match.status !== 'scheduled') {
-      throw new AppError(400, 'BAD_REQUEST', 'Match is not in scheduled status');
+    if (match.status !== "scheduled") {
+      throw new AppError(
+        400,
+        "BAD_REQUEST",
+        "Match is not in scheduled status"
+      );
     }
 
     const member = await prisma.groupMember.findFirst({
@@ -29,7 +40,7 @@ export class PredictionService {
     });
 
     if (!member) {
-      throw new AppError(403, 'FORBIDDEN', 'Not a member of this group');
+      throw new AppError(403, "FORBIDDEN", "Not a member of this group");
     }
 
     const existing = await prisma.prediction.findFirst({
@@ -41,7 +52,11 @@ export class PredictionService {
     });
 
     if (existing) {
-      throw new AppError(409, 'CONFLICT', 'Prediction already exists for this match');
+      throw new AppError(
+        409,
+        "CONFLICT",
+        "Prediction already exists for this match"
+      );
     }
 
     const prediction = await prisma.prediction.create({
@@ -66,25 +81,33 @@ export class PredictionService {
     return prediction;
   }
 
-  async updatePrediction(predictionId: number, userId: number, data: {
-    homeScorePrediction: number;
-    awayScorePrediction: number;
-  }) {
+  async updatePrediction(
+    predictionId: number,
+    userId: number,
+    data: {
+      homeScorePrediction: number;
+      awayScorePrediction: number;
+    }
+  ) {
     const prediction = await prisma.prediction.findUnique({
       where: { id: predictionId },
       include: { match: true },
     });
 
     if (!prediction) {
-      throw new AppError(404, 'NOT_FOUND', 'Prediction not found');
+      throw new AppError(404, "NOT_FOUND", "Prediction not found");
     }
 
     if (prediction.userId !== userId) {
-      throw new AppError(403, 'FORBIDDEN', 'Not your prediction');
+      throw new AppError(403, "FORBIDDEN", "Not your prediction");
     }
 
     if (new Date(prediction.match.scheduledDate) <= new Date()) {
-      throw new AppError(400, 'BAD_REQUEST', 'Cannot update after match has started');
+      throw new AppError(
+        400,
+        "BAD_REQUEST",
+        "Cannot update after match has started"
+      );
     }
 
     const updated = await prisma.prediction.update({
@@ -106,7 +129,15 @@ export class PredictionService {
     return updated;
   }
 
-  async getUserPredictions(userId: number, params: { groupId?: number; matchId?: number; page?: number; limit?: number }) {
+  async getUserPredictions(
+    userId: number,
+    params: {
+      groupId?: number;
+      matchId?: number;
+      page?: number;
+      limit?: number;
+    }
+  ) {
     const where: any = { userId };
     if (params.groupId) where.groupId = params.groupId;
     if (params.matchId) where.matchId = params.matchId;
@@ -133,7 +164,7 @@ export class PredictionService {
             },
           },
         },
-        orderBy: { predictedAt: 'desc' },
+        orderBy: { predictedAt: "desc" },
         skip,
         take: limitNumber,
       }),
@@ -178,11 +209,11 @@ export class PredictionService {
     });
 
     if (!prediction) {
-      throw new AppError(404, 'NOT_FOUND', 'Prediction not found');
+      throw new AppError(404, "NOT_FOUND", "Prediction not found");
     }
 
     if (prediction.userId !== userId) {
-      throw new AppError(403, 'FORBIDDEN', 'Not your prediction');
+      throw new AppError(403, "FORBIDDEN", "Not your prediction");
     }
 
     return prediction;
@@ -195,22 +226,26 @@ export class PredictionService {
     });
 
     if (!prediction) {
-      throw new AppError(404, 'NOT_FOUND', 'Prediction not found');
+      throw new AppError(404, "NOT_FOUND", "Prediction not found");
     }
 
     if (prediction.userId !== userId) {
-      throw new AppError(403, 'FORBIDDEN', 'Not your prediction');
+      throw new AppError(403, "FORBIDDEN", "Not your prediction");
     }
 
     if (new Date(prediction.match.scheduledDate) <= new Date()) {
-      throw new AppError(400, 'BAD_REQUEST', 'Cannot delete after match has started');
+      throw new AppError(
+        400,
+        "BAD_REQUEST",
+        "Cannot delete after match has started"
+      );
     }
 
     await prisma.prediction.delete({
       where: { id: predictionId },
     });
 
-    return { message: 'Prediction deleted successfully' };
+    return { message: "Prediction deleted successfully" };
   }
 
   async getMatchPredictions(matchId: number, groupId: number, userId: number) {
@@ -219,7 +254,7 @@ export class PredictionService {
     });
 
     if (!member) {
-      throw new AppError(403, 'FORBIDDEN', 'Not a member of this group');
+      throw new AppError(403, "FORBIDDEN", "Not a member of this group");
     }
 
     const match = await prisma.match.findUnique({
@@ -227,10 +262,13 @@ export class PredictionService {
     });
 
     if (!match) {
-      throw new AppError(404, 'NOT_FOUND', 'Match not found');
+      throw new AppError(404, "NOT_FOUND", "Match not found");
     }
 
-    if (new Date(match.scheduledDate) > new Date() && match.status === 'scheduled') {
+    if (
+      new Date(match.scheduledDate) > new Date() &&
+      match.status === "scheduled"
+    ) {
       const userPrediction = await prisma.prediction.findFirst({
         where: { matchId, groupId, userId },
         include: {
@@ -256,7 +294,7 @@ export class PredictionService {
           },
         },
       },
-      orderBy: { predictedAt: 'asc' },
+      orderBy: { predictedAt: "asc" },
     });
 
     return predictions;
@@ -267,12 +305,12 @@ export class PredictionService {
       where: { id: matchId },
     });
 
-    if (!match || match.status !== 'finished') {
-      throw new AppError(400, 'BAD_REQUEST', 'Match is not finished');
+    if (!match || match.status !== "finished") {
+      throw new AppError(400, "BAD_REQUEST", "Match is not finished");
     }
 
     if (match.homeScore === null || match.awayScore === null) {
-      throw new AppError(400, 'BAD_REQUEST', 'Match scores are not set');
+      throw new AppError(400, "BAD_REQUEST", "Match scores are not set");
     }
 
     const predictions = await prisma.prediction.findMany({
@@ -342,12 +380,12 @@ export class PredictionService {
       }
     }
 
-    const groups = [...new Set(predictions.map(p => p.groupId))];
+    const groups = [...new Set(predictions.map((p) => p.groupId))];
     for (const groupId of groups) {
       await this.updateGroupRankings(groupId);
     }
 
-    return { message: 'Points calculated successfully' };
+    return { message: "Points calculated successfully" };
   }
 
   private calculatePoints(
@@ -359,23 +397,51 @@ export class PredictionService {
   ): number {
     let points = 0;
 
+    // Check for EXACT_SCORE
     if (predictedHome === actualHome && predictedAway === actualAway) {
-      const rule = rules.find(r => r.ruleDescription?.includes('Exact score'));
+      const rule = rules.find((r) => r.ruleType === "EXACT_SCORE");
       points += rule?.points || 5;
       return points;
     }
 
-    const predictedResult = predictedHome > predictedAway ? 'home' : predictedHome < predictedAway ? 'away' : 'draw';
-    const actualResult = actualHome > actualAway ? 'home' : actualHome < actualAway ? 'away' : 'draw';
+    const predictedResult =
+      predictedHome > predictedAway
+        ? "home"
+        : predictedHome < predictedAway
+        ? "away"
+        : "draw";
+    const actualResult =
+      actualHome > actualAway
+        ? "home"
+        : actualHome < actualAway
+        ? "away"
+        : "draw";
 
+    // Check for CORRECT_WINNER or CORRECT_DRAW
     if (predictedResult === actualResult) {
-      if (actualResult === 'draw') {
-        const rule = rules.find(r => r.ruleDescription?.includes('Correct draw'));
+      if (actualResult === "draw") {
+        const rule = rules.find((r) => r.ruleType === "CORRECT_DRAW");
         points += rule?.points || 3;
       } else {
-        const rule = rules.find(r => r.ruleDescription?.includes('Correct winner'));
+        const rule = rules.find((r) => r.ruleType === "CORRECT_WINNER");
         points += rule?.points || 3;
       }
+    }
+
+    // Check for GOAL_DIFFERENCE
+    const predictedDiff = predictedHome - predictedAway;
+    const actualDiff = actualHome - actualAway;
+    if (predictedDiff === actualDiff) {
+      const rule = rules.find((r) => r.ruleType === "GOAL_DIFFERENCE");
+      if (rule) points += rule.points;
+    }
+
+    // Check for BOTH_TEAMS_SCORE
+    const bothTeamsScoredInPrediction = predictedHome > 0 && predictedAway > 0;
+    const bothTeamsScoredInActual = actualHome > 0 && actualAway > 0;
+    if (bothTeamsScoredInPrediction === bothTeamsScoredInActual) {
+      const rule = rules.find((r) => r.ruleType === "BOTH_TEAMS_SCORE");
+      if (rule) points += rule.points;
     }
 
     return points;
@@ -384,7 +450,7 @@ export class PredictionService {
   private async updateGroupRankings(groupId: number) {
     const rankings = await prisma.groupRanking.findMany({
       where: { groupId },
-      orderBy: { totalPoints: 'desc' },
+      orderBy: { totalPoints: "desc" },
     });
 
     let currentRank = 1;

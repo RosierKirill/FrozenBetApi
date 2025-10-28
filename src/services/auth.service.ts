@@ -1,7 +1,7 @@
-import prisma from '../config/database';
-import { hashPassword, comparePassword } from '../utils/password';
-import { generateToken, generateRefreshToken } from '../utils/jwt';
-import { AppError } from '../middleware/errorHandler';
+import prisma from "../config/database";
+import { AppError } from "../middleware/errorHandler";
+import { generateRefreshToken, generateToken } from "../utils/jwt";
+import { comparePassword, hashPassword } from "../utils/password";
 
 export class AuthService {
   async register(data: {
@@ -19,9 +19,9 @@ export class AuthService {
 
     if (existingUser) {
       if (existingUser.email === data.email) {
-        throw new AppError(409, 'CONFLICT', 'Email already exists');
+        throw new AppError(409, "CONFLICT", "Email already exists");
       }
-      throw new AppError(409, 'CONFLICT', 'Username already exists');
+      throw new AppError(409, "CONFLICT", "Username already exists");
     }
 
     const passwordHash = await hashPassword(data.password);
@@ -65,13 +65,13 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new AppError(401, 'UNAUTHORIZED', 'Invalid credentials');
+      throw new AppError(401, "UNAUTHORIZED", "Invalid credentials");
     }
 
     const isPasswordValid = await comparePassword(password, user.passwordHash);
 
     if (!isPasswordValid) {
-      throw new AppError(401, 'UNAUTHORIZED', 'Invalid credentials');
+      throw new AppError(401, "UNAUTHORIZED", "Invalid credentials");
     }
 
     const token = generateToken({
@@ -105,7 +105,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new AppError(404, 'NOT_FOUND', 'User not found');
+      throw new AppError(404, "NOT_FOUND", "User not found");
     }
 
     return user;
@@ -141,13 +141,16 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new AppError(404, 'NOT_FOUND', 'User not found');
+      throw new AppError(404, "NOT_FOUND", "User not found");
     }
 
-    const isPasswordValid = await comparePassword(currentPassword, user.passwordHash);
+    const isPasswordValid = await comparePassword(
+      currentPassword,
+      user.passwordHash
+    );
 
     if (!isPasswordValid) {
-      throw new AppError(401, 'UNAUTHORIZED', 'Current password is incorrect');
+      throw new AppError(401, "UNAUTHORIZED", "Current password is incorrect");
     }
 
     const passwordHash = await hashPassword(newPassword);
@@ -157,7 +160,7 @@ export class AuthService {
       data: { passwordHash },
     });
 
-    return { message: 'Password changed successfully' };
+    return { message: "Password changed successfully" };
   }
 
   async refreshToken(userId: number) {
@@ -166,7 +169,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new AppError(404, 'NOT_FOUND', 'User not found');
+      throw new AppError(404, "NOT_FOUND", "User not found");
     }
 
     const token = generateToken({

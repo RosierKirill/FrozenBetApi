@@ -4,8 +4,8 @@
  * @description Script pour peupler la table "Team" à partir d'une API externe.
  */
 
-import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import "dotenv/config";
 import { z } from "zod";
 
 const prisma = new PrismaClient();

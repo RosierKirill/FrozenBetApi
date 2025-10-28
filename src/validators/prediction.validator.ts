@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const createPredictionSchema = z.object({
   matchId: z.number().int().positive(),

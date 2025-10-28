@@ -13,10 +13,10 @@ import groupRoutes from "./routes/group.routes";
 import invitationRoutes from "./routes/invitation.routes";
 import matchRoutes from "./routes/match.routes";
 import predictionRoutes from "./routes/prediction.routes";
+import sseRoutes from "./routes/sse.routes";
 import statisticsRoutes from "./routes/statistics.routes";
 import teamRoutes from "./routes/team.routes";
 import userRoutes from "./routes/user.routes";
-import sseRoutes from "./routes/sse.routes";
 
 const app = express();
 

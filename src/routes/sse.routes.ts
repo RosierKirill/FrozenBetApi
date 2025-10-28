@@ -1,6 +1,6 @@
-import { Router } from 'express';
-import { randomUUID } from 'crypto';
-import { sseService } from '../services/sse.service';
+import { randomUUID } from "crypto";
+import { Router } from "express";
+import { sseService } from "../services/sse.service";
 
 const router = Router();
 
@@ -46,18 +46,25 @@ const router = Router();
  *                   event: heartbeat
  *                   data: {"timestamp":"2025-10-27T10:00:30.000Z"}
  */
-router.get('/live-scores', (req, res) => {
+router.get("/live-scores", (req, res) => {
   const clientId = randomUUID();
   const matchIdsParam = req.query.matchIds as string;
 
   let matchIds: number[] | undefined;
   if (matchIdsParam) {
-    matchIds = matchIdsParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+    matchIds = matchIdsParam
+      .split(",")
+      .map((id) => parseInt(id.trim()))
+      .filter((id) => !isNaN(id));
   }
 
   sseService.addClient(clientId, res, matchIds);
 
-  console.log(`New SSE client connected: ${clientId}, subscribed to matches: ${matchIds ? matchIds.join(',') : 'all'}`);
+  console.log(
+    `New SSE client connected: ${clientId}, subscribed to matches: ${
+      matchIds ? matchIds.join(",") : "all"
+    }`
+  );
 });
 
 /**
@@ -70,12 +77,12 @@ router.get('/live-scores', (req, res) => {
  *       200:
  *         description: SSE service status
  */
-router.get('/status', (req, res) => {
+router.get("/status", (req, res) => {
   res.json({
     success: true,
     data: {
       activeClients: sseService.getActiveClientsCount(),
-      status: 'running',
+      status: "running",
     },
   });
 });

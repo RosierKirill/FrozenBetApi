@@ -1,5 +1,5 @@
-import prisma from '../config/database';
-import { AppError } from '../middleware/errorHandler';
+import prisma from "../config/database";
+import { AppError } from "../middleware/errorHandler";
 
 export class StatisticsService {
   async getUserStatistics(userId: number) {
@@ -8,7 +8,7 @@ export class StatisticsService {
     });
 
     if (!user) {
-      throw new AppError(404, 'NOT_FOUND', 'User not found');
+      throw new AppError(404, "NOT_FOUND", "User not found");
     }
 
     // Get total predictions
@@ -27,9 +27,15 @@ export class StatisticsService {
       },
     });
 
-    const totalPoints = predictions.reduce((sum, p) => sum + (p.pointsEarned || 0), 0);
-    const correctPredictions = predictions.filter(p => (p.pointsEarned || 0) > 0).length;
-    const accuracy = totalPredictions > 0 ? (correctPredictions / totalPredictions) * 100 : 0;
+    const totalPoints = predictions.reduce(
+      (sum, p) => sum + (p.pointsEarned || 0),
+      0
+    );
+    const correctPredictions = predictions.filter(
+      (p) => (p.pointsEarned || 0) > 0
+    ).length;
+    const accuracy =
+      totalPredictions > 0 ? (correctPredictions / totalPredictions) * 100 : 0;
 
     // Get group memberships
     const groupMemberships = await prisma.groupMember.findMany({
@@ -55,7 +61,7 @@ export class StatisticsService {
           },
         },
       },
-      orderBy: { rank: 'asc' },
+      orderBy: { rank: "asc" },
     });
 
     return {
@@ -64,7 +70,7 @@ export class StatisticsService {
       correctPredictions,
       accuracy: Math.round(accuracy * 100) / 100,
       groupsJoined: groupMemberships.length,
-      rankings: rankings.map(r => ({
+      rankings: rankings.map((r) => ({
         groupId: r.group.id,
         groupName: r.group.name,
         rank: r.rank,
@@ -81,7 +87,7 @@ export class StatisticsService {
     });
 
     if (!group) {
-      throw new AppError(404, 'NOT_FOUND', 'Group not found');
+      throw new AppError(404, "NOT_FOUND", "Group not found");
     }
 
     // Check if user is a member
@@ -90,7 +96,7 @@ export class StatisticsService {
     });
 
     if (!member) {
-      throw new AppError(403, 'FORBIDDEN', 'Not a member of this group');
+      throw new AppError(403, "FORBIDDEN", "Not a member of this group");
     }
 
     // Get total members
@@ -114,7 +120,7 @@ export class StatisticsService {
           },
         },
       },
-      orderBy: { rank: 'asc' },
+      orderBy: { rank: "asc" },
       take: 5,
     });
 
@@ -136,7 +142,7 @@ export class StatisticsService {
           },
         },
       },
-      orderBy: { predictedAt: 'desc' },
+      orderBy: { predictedAt: "desc" },
       take: 10,
     });
 
@@ -145,7 +151,7 @@ export class StatisticsService {
       groupName: group.name,
       totalMembers,
       totalPredictions,
-      topPerformers: topPerformers.map(p => ({
+      topPerformers: topPerformers.map((p) => ({
         userId: p.user.id,
         username: p.user.username,
         rank: p.rank,
@@ -153,7 +159,7 @@ export class StatisticsService {
         correctPredictions: p.correctPredictions,
         totalPredictions: p.totalPredictions,
       })),
-      recentActivity: recentPredictions.map(p => ({
+      recentActivity: recentPredictions.map((p) => ({
         predictionId: p.id,
         userId: p.user.id,
         username: p.user.username,
@@ -175,7 +181,7 @@ export class StatisticsService {
         where: { competitionId },
         select: { id: true },
       });
-      where.groupId = { in: groups.map(g => g.id) };
+      where.groupId = { in: groups.map((g) => g.id) };
     }
 
     // Get rankings across all groups or specific competition
@@ -203,14 +209,14 @@ export class StatisticsService {
           },
         },
       },
-      orderBy: [{ totalPoints: 'desc' }, { correctPredictions: 'desc' }],
+      orderBy: [{ totalPoints: "desc" }, { correctPredictions: "desc" }],
       take: limit,
     });
 
     // Aggregate user stats across all groups
     const userStatsMap = new Map();
 
-    rankings.forEach(ranking => {
+    rankings.forEach((ranking) => {
       const userId = ranking.user.id;
       if (!userStatsMap.has(userId)) {
         userStatsMap.set(userId, {
@@ -246,7 +252,9 @@ export class StatisticsService {
         ...stats,
         accuracy:
           stats.totalPredictions > 0
-            ? Math.round((stats.correctPredictions / stats.totalPredictions) * 100 * 100) / 100
+            ? Math.round(
+                (stats.correctPredictions / stats.totalPredictions) * 100 * 100
+              ) / 100
             : 0,
       }));
 

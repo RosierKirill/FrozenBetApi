@@ -1,23 +1,30 @@
-import prisma from '../config/database';
-import { AppError } from '../middleware/errorHandler';
-import { generateInviteCode, generateInvitationToken } from '../utils/inviteCode';
+import prisma from "../config/database";
+import { AppError } from "../middleware/errorHandler";
+import {
+  generateInvitationToken,
+  generateInviteCode,
+} from "../utils/inviteCode";
 
 export class GroupService {
-  async createGroup(userId: number, data: {
-    name: string;
-    description?: string;
-    competitionId: number;
-    visibility: string;
-  }) {
+  async createGroup(
+    userId: number,
+    data: {
+      name: string;
+      description?: string;
+      competitionId: number;
+      visibility: string;
+    }
+  ) {
     const competition = await prisma.competition.findUnique({
       where: { id: data.competitionId },
     });
 
     if (!competition) {
-      throw new AppError(404, 'NOT_FOUND', 'Competition not found');
+      throw new AppError(404, "NOT_FOUND", "Competition not found");
     }
 
-    const inviteCode = data.visibility === 'private' ? generateInviteCode() : null;
+    const inviteCode =
+      data.visibility === "private" ? generateInviteCode() : null;
 
     const group = await prisma.group.create({
       data: {
@@ -45,23 +52,55 @@ export class GroupService {
       data: {
         groupId: group.id,
         userId,
-        role: 'owner',
+        role: "owner",
       },
     });
 
     // Create default scoring rules
     await prisma.groupScoringRule.createMany({
       data: [
-        { groupId: group.id, ruleDescription: 'Exact score', points: 5 },
-        { groupId: group.id, ruleDescription: 'Correct winner', points: 3 },
-        { groupId: group.id, ruleDescription: 'Correct draw', points: 3 },
+        {
+          groupId: group.id,
+          ruleType: "EXACT_SCORE",
+          ruleDescription: "Exact score",
+          points: 5,
+        },
+        {
+          groupId: group.id,
+          ruleType: "CORRECT_WINNER",
+          ruleDescription: "Correct winner",
+          points: 3,
+        },
+        {
+          groupId: group.id,
+          ruleType: "CORRECT_DRAW",
+          ruleDescription: "Correct draw",
+          points: 3,
+        },
+        {
+          groupId: group.id,
+          ruleType: "GOAL_DIFFERENCE",
+          ruleDescription: "Goal difference",
+          points: 4,
+        },
+        {
+          groupId: group.id,
+          ruleType: "BOTH_TEAMS_SCORE",
+          ruleDescription: "Both teams to score",
+          points: 2,
+        },
       ],
     });
 
     return group;
   }
 
-  async getGroups(params: { visibility?: string; search?: string; page?: number; limit?: number }) {
+  async getGroups(params: {
+    visibility?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const { visibility, search, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
@@ -93,7 +132,7 @@ export class GroupService {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       prisma.group.count({ where }),
     ]);
@@ -132,11 +171,11 @@ export class GroupService {
     });
 
     if (!group) {
-      throw new AppError(404, 'NOT_FOUND', 'Group not found');
+      throw new AppError(404, "NOT_FOUND", "Group not found");
     }
 
     // Hide invite code if user is not a member (for private groups)
-    if (group.visibility === 'private' && userId) {
+    if (group.visibility === "private" && userId) {
       const isMember = await prisma.groupMember.findFirst({
         where: { groupId, userId },
       });
@@ -151,7 +190,7 @@ export class GroupService {
   }
 
   async updateGroup(groupId: number, userId: number, data: any) {
-    await this.checkPermission(groupId, userId, ['owner', 'admin']);
+    await this.checkPermission(groupId, userId, ["owner", "admin"]);
 
     const group = await prisma.group.update({
       where: { id: groupId },
@@ -171,13 +210,13 @@ export class GroupService {
   }
 
   async deleteGroup(groupId: number, userId: number) {
-    await this.checkPermission(groupId, userId, ['owner']);
+    await this.checkPermission(groupId, userId, ["owner"]);
 
     await prisma.group.delete({
       where: { id: groupId },
     });
 
-    return { message: 'Group deleted successfully' };
+    return { message: "Group deleted successfully" };
   }
 
   async joinGroup(groupId: number, userId: number, inviteCode?: string) {
@@ -186,11 +225,11 @@ export class GroupService {
     });
 
     if (!group) {
-      throw new AppError(404, 'NOT_FOUND', 'Group not found');
+      throw new AppError(404, "NOT_FOUND", "Group not found");
     }
 
-    if (group.visibility === 'private' && group.inviteCode !== inviteCode) {
-      throw new AppError(403, 'FORBIDDEN', 'Invalid invite code');
+    if (group.visibility === "private" && group.inviteCode !== inviteCode) {
+      throw new AppError(403, "FORBIDDEN", "Invalid invite code");
     }
 
     // Check if already a member
@@ -199,14 +238,14 @@ export class GroupService {
     });
 
     if (existingMember) {
-      throw new AppError(409, 'CONFLICT', 'Already a member of this group');
+      throw new AppError(409, "CONFLICT", "Already a member of this group");
     }
 
     const member = await prisma.groupMember.create({
       data: {
         groupId,
         userId,
-        role: 'member',
+        role: "member",
       },
       include: {
         user: {
@@ -228,18 +267,18 @@ export class GroupService {
     });
 
     if (!member) {
-      throw new AppError(404, 'NOT_FOUND', 'Not a member of this group');
+      throw new AppError(404, "NOT_FOUND", "Not a member of this group");
     }
 
-    if (member.role === 'owner') {
-      throw new AppError(400, 'BAD_REQUEST', 'Owner cannot leave the group');
+    if (member.role === "owner") {
+      throw new AppError(400, "BAD_REQUEST", "Owner cannot leave the group");
     }
 
     await prisma.groupMember.delete({
       where: { id: member.id },
     });
 
-    return { message: 'Left group successfully' };
+    return { message: "Left group successfully" };
   }
 
   async getMembers(groupId: number, page?: number, limit?: number) {
@@ -263,7 +302,7 @@ export class GroupService {
             },
           },
         },
-        orderBy: { totalPoints: 'desc' },
+        orderBy: { totalPoints: "desc" },
         skip,
         take: limitNumber,
       }),
@@ -282,25 +321,25 @@ export class GroupService {
   }
 
   async removeMember(groupId: number, userId: number, targetUserId: number) {
-    await this.checkPermission(groupId, userId, ['owner', 'admin']);
+    await this.checkPermission(groupId, userId, ["owner", "admin"]);
 
     const targetMember = await prisma.groupMember.findFirst({
       where: { groupId, userId: targetUserId },
     });
 
     if (!targetMember) {
-      throw new AppError(404, 'NOT_FOUND', 'Member not found');
+      throw new AppError(404, "NOT_FOUND", "Member not found");
     }
 
-    if (targetMember.role === 'owner') {
-      throw new AppError(400, 'BAD_REQUEST', 'Cannot remove group owner');
+    if (targetMember.role === "owner") {
+      throw new AppError(400, "BAD_REQUEST", "Cannot remove group owner");
     }
 
     await prisma.groupMember.delete({
       where: { id: targetMember.id },
     });
 
-    return { message: 'Member removed successfully' };
+    return { message: "Member removed successfully" };
   }
 
   async getRankings(groupId: number, page?: number, limit?: number) {
@@ -309,7 +348,7 @@ export class GroupService {
     });
 
     if (!group) {
-      throw new AppError(404, 'NOT_FOUND', 'Group not found');
+      throw new AppError(404, "NOT_FOUND", "Group not found");
     }
 
     const pageNumber = page || 1;
@@ -331,7 +370,7 @@ export class GroupService {
             },
           },
         },
-        orderBy: { rank: 'asc' },
+        orderBy: { rank: "asc" },
         skip,
         take: limitNumber,
       }),
@@ -349,13 +388,18 @@ export class GroupService {
     };
   }
 
-  async getGroupPredictions(groupId: number, userId: number, page?: number, limit?: number) {
+  async getGroupPredictions(
+    groupId: number,
+    userId: number,
+    page?: number,
+    limit?: number
+  ) {
     const member = await prisma.groupMember.findFirst({
       where: { groupId, userId },
     });
 
     if (!member) {
-      throw new AppError(403, 'FORBIDDEN', 'Not a member of this group');
+      throw new AppError(403, "FORBIDDEN", "Not a member of this group");
     }
 
     const pageNumber = page || 1;
@@ -381,7 +425,7 @@ export class GroupService {
             },
           },
         },
-        orderBy: { predictedAt: 'desc' },
+        orderBy: { predictedAt: "desc" },
         skip,
         take: limitNumber,
       }),
@@ -405,26 +449,37 @@ export class GroupService {
     });
 
     if (!group) {
-      throw new AppError(404, 'NOT_FOUND', 'Group not found');
+      throw new AppError(404, "NOT_FOUND", "Group not found");
     }
 
     const rules = await prisma.groupScoringRule.findMany({
       where: { groupId },
-      orderBy: { points: 'desc' },
+      orderBy: { points: "desc" },
     });
 
     return rules;
   }
 
-  async createScoringRule(groupId: number, userId: number, data: {
-    ruleDescription: string;
-    points: number;
-  }) {
-    await this.checkPermission(groupId, userId, ['owner', 'admin']);
+  async createScoringRule(
+    groupId: number,
+    userId: number,
+    data: {
+      ruleType:
+        | "EXACT_SCORE"
+        | "CORRECT_WINNER"
+        | "CORRECT_DRAW"
+        | "GOAL_DIFFERENCE"
+        | "BOTH_TEAMS_SCORE";
+      ruleDescription?: string;
+      points: number;
+    }
+  ) {
+    await this.checkPermission(groupId, userId, ["owner", "admin"]);
 
     const rule = await prisma.groupScoringRule.create({
       data: {
         groupId,
+        ruleType: data.ruleType,
         ruleDescription: data.ruleDescription,
         points: data.points,
       },
@@ -433,18 +488,24 @@ export class GroupService {
     return rule;
   }
 
-  async updateScoringRule(groupId: number, ruleId: number, userId: number, data: {
-    ruleDescription?: string;
-    points?: number;
-  }) {
-    await this.checkPermission(groupId, userId, ['owner', 'admin']);
+  async updateScoringRule(
+    groupId: number,
+    ruleId: number,
+    userId: number,
+    data: {
+      ruleType?: 'EXACT_SCORE' | 'CORRECT_WINNER' | 'CORRECT_DRAW' | 'GOAL_DIFFERENCE' | 'BOTH_TEAMS_SCORE';
+      ruleDescription?: string;
+      points?: number;
+    }
+  ) {
+    await this.checkPermission(groupId, userId, ["owner", "admin"]);
 
     const rule = await prisma.groupScoringRule.findFirst({
       where: { id: ruleId, groupId },
     });
 
     if (!rule) {
-      throw new AppError(404, 'NOT_FOUND', 'Scoring rule not found');
+      throw new AppError(404, "NOT_FOUND", "Scoring rule not found");
     }
 
     const updated = await prisma.groupScoringRule.update({
@@ -456,30 +517,34 @@ export class GroupService {
   }
 
   async deleteScoringRule(groupId: number, ruleId: number, userId: number) {
-    await this.checkPermission(groupId, userId, ['owner', 'admin']);
+    await this.checkPermission(groupId, userId, ["owner", "admin"]);
 
     const rule = await prisma.groupScoringRule.findFirst({
       where: { id: ruleId, groupId },
     });
 
     if (!rule) {
-      throw new AppError(404, 'NOT_FOUND', 'Scoring rule not found');
+      throw new AppError(404, "NOT_FOUND", "Scoring rule not found");
     }
 
     await prisma.groupScoringRule.delete({
       where: { id: ruleId },
     });
 
-    return { message: 'Scoring rule deleted successfully' };
+    return { message: "Scoring rule deleted successfully" };
   }
 
-  private async checkPermission(groupId: number, userId: number, allowedRoles: string[]) {
+  private async checkPermission(
+    groupId: number,
+    userId: number,
+    allowedRoles: string[]
+  ) {
     const member = await prisma.groupMember.findFirst({
       where: { groupId, userId },
     });
 
     if (!member || !allowedRoles.includes(member.role)) {
-      throw new AppError(403, 'FORBIDDEN', 'Insufficient permissions');
+      throw new AppError(403, "FORBIDDEN", "Insufficient permissions");
     }
   }
 }

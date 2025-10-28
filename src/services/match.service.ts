@@ -1,7 +1,7 @@
-import prisma from '../config/database';
-import { AppError } from '../middleware/errorHandler';
-import { PredictionService } from './prediction.service';
-import { sseService } from './sse.service';
+import prisma from "../config/database";
+import { AppError } from "../middleware/errorHandler";
+import { PredictionService } from "./prediction.service";
+import { sseService } from "./sse.service";
 
 export class MatchService {
   private predictionService = new PredictionService();
@@ -16,7 +16,7 @@ export class MatchService {
     const match = await prisma.match.create({
       data: {
         ...data,
-        status: 'scheduled',
+        status: "scheduled",
       },
       include: {
         homeTeam: true,
@@ -62,10 +62,15 @@ export class MatchService {
       where: { id },
     });
 
-    return { message: 'Match deleted successfully' };
+    return { message: "Match deleted successfully" };
   }
 
-  async updateScore(id: number, homeScore: number, awayScore: number, status?: string) {
+  async updateScore(
+    id: number,
+    homeScore: number,
+    awayScore: number,
+    status?: string
+  ) {
     const match = await prisma.match.findUnique({
       where: { id },
       include: {
@@ -76,7 +81,7 @@ export class MatchService {
     });
 
     if (!match) {
-      throw new AppError(404, 'NOT_FOUND', 'Match not found');
+      throw new AppError(404, "NOT_FOUND", "Match not found");
     }
 
     const updated = await prisma.match.update({
@@ -84,7 +89,7 @@ export class MatchService {
       data: {
         homeScore,
         awayScore,
-        status: status || 'finished',
+        status: status || "finished",
       },
       include: {
         homeTeam: true,
@@ -104,7 +109,7 @@ export class MatchService {
     });
 
     // Calculate points for all predictions on this match if finished
-    if (updated.status === 'finished') {
+    if (updated.status === "finished") {
       await this.predictionService.calculatePointsForMatch(id);
     }
 
@@ -114,14 +119,14 @@ export class MatchService {
   async getFinishedMatches() {
     const matches = await prisma.match.findMany({
       where: {
-        status: 'finished',
+        status: "finished",
       },
       include: {
         homeTeam: true,
         awayTeam: true,
         competition: true,
       },
-      orderBy: { scheduledDate: 'desc' },
+      orderBy: { scheduledDate: "desc" },
       take: 50,
     });
 

@@ -1,8 +1,12 @@
-import prisma from '../config/database';
-import { AppError } from '../middleware/errorHandler';
+import prisma from "../config/database";
+import { AppError } from "../middleware/errorHandler";
 
 export class CompetitionService {
-  async getCompetitions(params: { status?: string; page?: number; limit?: number }) {
+  async getCompetitions(params: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
@@ -23,7 +27,7 @@ export class CompetitionService {
             },
           },
         },
-        orderBy: { startDate: 'desc' },
+        orderBy: { startDate: "desc" },
       }),
       prisma.competition.count({ where }),
     ]);
@@ -54,7 +58,7 @@ export class CompetitionService {
     });
 
     if (!competition) {
-      throw new AppError(404, 'NOT_FOUND', 'Competition not found');
+      throw new AppError(404, "NOT_FOUND", "Competition not found");
     }
 
     return competition;
@@ -71,7 +75,7 @@ export class CompetitionService {
     const competition = await prisma.competition.create({
       data: {
         ...data,
-        status: 'upcoming',
+        status: "upcoming",
       },
     });
 
@@ -92,7 +96,7 @@ export class CompetitionService {
       where: { id },
     });
 
-    return { message: 'Competition deleted successfully' };
+    return { message: "Competition deleted successfully" };
   }
 
   async getCompetitionMatches(id: number, page?: number, limit?: number) {
@@ -109,7 +113,7 @@ export class CompetitionService {
           homeTeam: true,
           awayTeam: true,
         },
-        orderBy: { scheduledDate: 'asc' },
+        orderBy: { scheduledDate: "asc" },
         skip,
         take: limitNumber,
       }),
@@ -137,7 +141,7 @@ export class CompetitionService {
     const [teams, total] = await Promise.all([
       prisma.team.findMany({
         where,
-        orderBy: { name: 'asc' },
+        orderBy: { name: "asc" },
         skip,
         take: limitNumber,
       }),
@@ -161,14 +165,14 @@ export class CompetitionService {
     });
 
     if (!competition) {
-      throw new AppError(404, 'NOT_FOUND', 'Competition not found');
+      throw new AppError(404, "NOT_FOUND", "Competition not found");
     }
 
     // Get all finished matches in this competition
     const matches = await prisma.match.findMany({
       where: {
         competitionId: id,
-        status: 'finished',
+        status: "finished",
         homeScore: { not: null },
         awayScore: { not: null },
       },
@@ -181,7 +185,7 @@ export class CompetitionService {
     // Calculate standings
     const teamStats = new Map();
 
-    matches.forEach(match => {
+    matches.forEach((match) => {
       const homeTeamId = match.homeTeamId;
       const awayTeamId = match.awayTeamId;
       const homeScore = match.homeScore!;
@@ -254,7 +258,8 @@ export class CompetitionService {
     // Convert to array and sort by points, then goal difference, then goals for
     const standings = Array.from(teamStats.values()).sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
-      if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+      if (b.goalDifference !== a.goalDifference)
+        return b.goalDifference - a.goalDifference;
       return b.goalsFor - a.goalsFor;
     });
 

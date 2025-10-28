@@ -1,8 +1,12 @@
-import prisma from '../config/database';
-import { AppError } from '../middleware/errorHandler';
+import prisma from "../config/database";
+import { AppError } from "../middleware/errorHandler";
 
 export class TeamService {
-  async getTeams(params: { competitionId?: number; page?: number; limit?: number }) {
+  async getTeams(params: {
+    competitionId?: number;
+    page?: number;
+    limit?: number;
+  }) {
     const { competitionId, page = 1, limit = 50 } = params;
     const skip = (page - 1) * limit;
 
@@ -22,7 +26,7 @@ export class TeamService {
             },
           },
         },
-        orderBy: { name: 'asc' },
+        orderBy: { name: "asc" },
       }),
       prisma.team.count({ where }),
     ]);
@@ -53,7 +57,7 @@ export class TeamService {
     });
 
     if (!team) {
-      throw new AppError(404, 'NOT_FOUND', 'Team not found');
+      throw new AppError(404, "NOT_FOUND", "Team not found");
     }
 
     return team;
@@ -88,7 +92,7 @@ export class TeamService {
       where: { id },
     });
 
-    return { message: 'Team deleted successfully' };
+    return { message: "Team deleted successfully" };
   }
 
   async getTeamMatches(id: number, page?: number, limit?: number) {
@@ -97,10 +101,7 @@ export class TeamService {
     const skip = (pageNumber - 1) * limitNumber;
 
     const where = {
-      OR: [
-        { homeTeamId: id },
-        { awayTeamId: id },
-      ],
+      OR: [{ homeTeamId: id }, { awayTeamId: id }],
     };
 
     const [matches, total] = await Promise.all([
@@ -111,7 +112,7 @@ export class TeamService {
           awayTeam: true,
           competition: true,
         },
-        orderBy: { scheduledDate: 'desc' },
+        orderBy: { scheduledDate: "desc" },
         skip,
         take: limitNumber,
       }),

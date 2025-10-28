@@ -1,5 +1,5 @@
-import prisma from '../config/database';
-import { AppError } from '../middleware/errorHandler';
+import prisma from "../config/database";
+import { AppError } from "../middleware/errorHandler";
 
 export class UserService {
   async getUsers(page = 1, limit = 20) {
@@ -17,7 +17,7 @@ export class UserService {
           lastName: true,
           createdAt: true,
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       prisma.user.count(),
     ]);
@@ -47,7 +47,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new AppError(404, 'NOT_FOUND', 'User not found');
+      throw new AppError(404, "NOT_FOUND", "User not found");
     }
 
     return user;
@@ -59,7 +59,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new AppError(404, 'NOT_FOUND', 'User not found');
+      throw new AppError(404, "NOT_FOUND", "User not found");
     }
 
     const [totalPredictions, groupMemberships, rankings] = await Promise.all([
@@ -79,7 +79,10 @@ export class UserService {
     ]);
 
     const totalPoints = rankings.reduce((sum, r) => sum + r.totalPoints, 0);
-    const correctPredictions = rankings.reduce((sum, r) => sum + r.correctPredictions, 0);
+    const correctPredictions = rankings.reduce(
+      (sum, r) => sum + r.correctPredictions,
+      0
+    );
 
     return {
       userId,
@@ -98,7 +101,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new AppError(404, 'NOT_FOUND', 'User not found');
+      throw new AppError(404, "NOT_FOUND", "User not found");
     }
 
     const pageNumber = page || 1;
@@ -133,7 +136,7 @@ export class UserService {
       prisma.groupMember.count({ where }),
     ]);
 
-    const groups = memberships.map(m => ({
+    const groups = memberships.map((m) => ({
       ...m.group,
       userRole: m.role,
       userPoints: m.totalPoints,
@@ -157,7 +160,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new AppError(404, 'NOT_FOUND', 'User not found');
+      throw new AppError(404, "NOT_FOUND", "User not found");
     }
 
     const pageNumber = page || 1;
@@ -184,7 +187,7 @@ export class UserService {
             },
           },
         },
-        orderBy: { predictedAt: 'desc' },
+        orderBy: { predictedAt: "desc" },
         skip,
         take: limitNumber,
       }),
