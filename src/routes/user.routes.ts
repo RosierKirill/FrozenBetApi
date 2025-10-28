@@ -1,7 +1,7 @@
-import { Router } from 'express';
-import { UserService } from '../services/user.service';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { sendSuccess } from '../utils/response';
+import { Router } from "express";
+import { authenticate, AuthRequest } from "../middleware/auth";
+import { UserService } from "../services/user.service";
+import { sendSuccess } from "../utils/response";
 
 const router = Router();
 const userService = new UserService();
@@ -12,6 +12,8 @@ const userService = new UserService();
  *   get:
  *     summary: Get all users
  *     tags: [Users]
+ *     security:
+ *       - AuthToken: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -24,14 +26,24 @@ const userService = new UserService();
  *     responses:
  *       200:
  *         description: List of users
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       429:
+ *         description: Too many requests
  */
-router.get('/', async (req, res, next) => {
+router.get("/", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const page = req.query.page ? parseInt(req.query.page as string) : 1;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
 
     const result = await userService.getUsers(page, limit);
-    sendSuccess(res, result.users, 'Users retrieved successfully', 200, result.meta);
+    sendSuccess(
+      res,
+      result.users,
+      "Users retrieved successfully",
+      200,
+      result.meta
+    );
   } catch (error) {
     next(error);
   }
@@ -43,6 +55,8 @@ router.get('/', async (req, res, next) => {
  *   get:
  *     summary: Get user by ID
  *     tags: [Users]
+ *     security:
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -52,8 +66,14 @@ router.get('/', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: User details
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: User not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id', async (req, res, next) => {
+router.get("/:id", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const user = await userService.getUserById(parseInt(req.params.id));
     sendSuccess(res, user);
@@ -68,6 +88,8 @@ router.get('/:id', async (req, res, next) => {
  *   get:
  *     summary: Get user statistics
  *     tags: [Users]
+ *     security:
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -77,15 +99,27 @@ router.get('/:id', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: User statistics
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: User not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id/statistics', async (req, res, next) => {
-  try {
-    const stats = await userService.getUserStatistics(parseInt(req.params.id));
-    sendSuccess(res, stats);
-  } catch (error) {
-    next(error);
+router.get(
+  "/:id/statistics",
+  authenticate,
+  async (req: AuthRequest, res, next) => {
+    try {
+      const stats = await userService.getUserStatistics(
+        parseInt(req.params.id)
+      );
+      sendSuccess(res, stats);
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -93,6 +127,8 @@ router.get('/:id/statistics', async (req, res, next) => {
  *   get:
  *     summary: Get user's groups
  *     tags: [Users]
+ *     security:
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -110,8 +146,14 @@ router.get('/:id/statistics', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: User's groups
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: User not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id/groups', async (req, res, next) => {
+router.get("/:id/groups", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { page, limit } = req.query;
     const result = await userService.getUserGroups(
@@ -119,7 +161,13 @@ router.get('/:id/groups', async (req, res, next) => {
       page ? parseInt(page as string) : undefined,
       limit ? parseInt(limit as string) : undefined
     );
-    sendSuccess(res, result.groups, 'Groups retrieved successfully', 200, result.meta);
+    sendSuccess(
+      res,
+      result.groups,
+      "Groups retrieved successfully",
+      200,
+      result.meta
+    );
   } catch (error) {
     next(error);
   }
@@ -131,6 +179,8 @@ router.get('/:id/groups', async (req, res, next) => {
  *   get:
  *     summary: Get user's predictions
  *     tags: [Users]
+ *     security:
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -148,19 +198,35 @@ router.get('/:id/groups', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: User's predictions
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: User not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id/predictions', async (req, res, next) => {
-  try {
-    const { page, limit } = req.query;
-    const result = await userService.getUserPredictions(
-      parseInt(req.params.id),
-      page ? parseInt(page as string) : undefined,
-      limit ? parseInt(limit as string) : undefined
-    );
-    sendSuccess(res, result.predictions, 'Predictions retrieved successfully', 200, result.meta);
-  } catch (error) {
-    next(error);
+router.get(
+  "/:id/predictions",
+  authenticate,
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { page, limit } = req.query;
+      const result = await userService.getUserPredictions(
+        parseInt(req.params.id),
+        page ? parseInt(page as string) : undefined,
+        limit ? parseInt(limit as string) : undefined
+      );
+      sendSuccess(
+        res,
+        result.predictions,
+        "Predictions retrieved successfully",
+        200,
+        result.meta
+      );
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 export default router;

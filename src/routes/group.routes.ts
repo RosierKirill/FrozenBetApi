@@ -1,8 +1,11 @@
-import { Router } from 'express';
-import { GroupService } from '../services/group.service';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { sendSuccess } from '../utils/response';
-import { createGroupSchema, updateGroupSchema } from '../validators/group.validator';
+import { Router } from "express";
+import { authenticate, AuthRequest } from "../middleware/auth";
+import { GroupService } from "../services/group.service";
+import { sendSuccess } from "../utils/response";
+import {
+  createGroupSchema,
+  updateGroupSchema,
+} from "../validators/group.validator";
 
 const router = Router();
 const groupService = new GroupService();
@@ -13,6 +16,7 @@ const groupService = new GroupService();
  *   get:
  *     summary: List all public groups
  *     tags: [Groups]
+ *     security: []
  *     parameters:
  *       - in: query
  *         name: visibility
@@ -35,7 +39,7 @@ const groupService = new GroupService();
  *       200:
  *         description: List of groups
  */
-router.get('/', async (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
     const { visibility, search, page, limit } = req.query;
     const result = await groupService.getGroups({
@@ -44,7 +48,13 @@ router.get('/', async (req, res, next) => {
       page: page ? parseInt(page as string) : undefined,
       limit: limit ? parseInt(limit as string) : undefined,
     });
-    sendSuccess(res, result.groups, 'Groups retrieved successfully', 200, result.meta);
+    sendSuccess(
+      res,
+      result.groups,
+      "Groups retrieved successfully",
+      200,
+      result.meta
+    );
   } catch (error) {
     next(error);
   }
@@ -57,7 +67,7 @@ router.get('/', async (req, res, next) => {
  *     summary: Create a new group
  *     tags: [Groups]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     requestBody:
  *       required: true
  *       content:
@@ -80,12 +90,18 @@ router.get('/', async (req, res, next) => {
  *     responses:
  *       201:
  *         description: Group created successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.post('/', authenticate, async (req: AuthRequest, res, next) => {
+router.post("/", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const data = createGroupSchema.parse(req.body);
     const group = await groupService.createGroup(req.user!.userId, data);
-    sendSuccess(res, group, 'Group created successfully', 201);
+    sendSuccess(res, group, "Group created successfully", 201);
   } catch (error) {
     next(error);
   }
@@ -97,6 +113,7 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
  *   get:
  *     summary: Get group details
  *     tags: [Groups]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -107,7 +124,7 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
  *       200:
  *         description: Group details
  */
-router.get('/:id', async (req: AuthRequest, res, next) => {
+router.get("/:id", async (req: AuthRequest, res, next) => {
   try {
     const group = await groupService.getGroupById(
       parseInt(req.params.id),
@@ -126,7 +143,7 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
  *     summary: Update group
  *     tags: [Groups]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -142,8 +159,16 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Group updated
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Group not found
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
+router.put("/:id", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const data = updateGroupSchema.parse(req.body);
     const group = await groupService.updateGroup(
@@ -151,7 +176,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
       req.user!.userId,
       data
     );
-    sendSuccess(res, group, 'Group updated successfully');
+    sendSuccess(res, group, "Group updated successfully");
   } catch (error) {
     next(error);
   }
@@ -164,7 +189,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Delete group
  *     tags: [Groups]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -174,8 +199,14 @@ router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Group deleted
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Group not found
+ *       429:
+ *         description: Too many requests
  */
-router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
+router.delete("/:id", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const result = await groupService.deleteGroup(
       parseInt(req.params.id),
@@ -194,7 +225,7 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Join a group
  *     tags: [Groups]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -212,15 +243,21 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Joined group successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Group not found
+ *       429:
+ *         description: Too many requests
  */
-router.post('/:id/join', authenticate, async (req: AuthRequest, res, next) => {
+router.post("/:id/join", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const member = await groupService.joinGroup(
       parseInt(req.params.id),
       req.user!.userId,
       req.body.inviteCode
     );
-    sendSuccess(res, member, 'Joined group successfully');
+    sendSuccess(res, member, "Joined group successfully");
   } catch (error) {
     next(error);
   }
@@ -233,7 +270,7 @@ router.post('/:id/join', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Leave a group
  *     tags: [Groups]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -243,8 +280,14 @@ router.post('/:id/join', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Left group successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Group not found
+ *       429:
+ *         description: Too many requests
  */
-router.post('/:id/leave', authenticate, async (req: AuthRequest, res, next) => {
+router.post("/:id/leave", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const result = await groupService.leaveGroup(
       parseInt(req.params.id),
@@ -262,6 +305,7 @@ router.post('/:id/leave', authenticate, async (req: AuthRequest, res, next) => {
  *   get:
  *     summary: Get group members
  *     tags: [Groups]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -280,7 +324,7 @@ router.post('/:id/leave', authenticate, async (req: AuthRequest, res, next) => {
  *       200:
  *         description: List of members
  */
-router.get('/:id/members', async (req, res, next) => {
+router.get("/:id/members", async (req, res, next) => {
   try {
     const { page, limit } = req.query;
     const result = await groupService.getMembers(
@@ -288,7 +332,13 @@ router.get('/:id/members', async (req, res, next) => {
       page ? parseInt(page as string) : undefined,
       limit ? parseInt(limit as string) : undefined
     );
-    sendSuccess(res, result.members, 'Members retrieved successfully', 200, result.meta);
+    sendSuccess(
+      res,
+      result.members,
+      "Members retrieved successfully",
+      200,
+      result.meta
+    );
   } catch (error) {
     next(error);
   }
@@ -301,7 +351,7 @@ router.get('/:id/members', async (req, res, next) => {
  *     summary: Remove a member from group
  *     tags: [Groups]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -316,19 +366,29 @@ router.get('/:id/members', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Member removed
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Group or member not found
+ *       429:
+ *         description: Too many requests
  */
-router.delete('/:id/members/:userId', authenticate, async (req: AuthRequest, res, next) => {
-  try {
-    const result = await groupService.removeMember(
-      parseInt(req.params.id),
-      req.user!.userId,
-      parseInt(req.params.userId)
-    );
-    sendSuccess(res, result);
-  } catch (error) {
-    next(error);
+router.delete(
+  "/:id/members/:userId",
+  authenticate,
+  async (req: AuthRequest, res, next) => {
+    try {
+      const result = await groupService.removeMember(
+        parseInt(req.params.id),
+        req.user!.userId,
+        parseInt(req.params.userId)
+      );
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -336,6 +396,7 @@ router.delete('/:id/members/:userId', authenticate, async (req: AuthRequest, res
  *   get:
  *     summary: Get group rankings
  *     tags: [Groups]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -354,7 +415,7 @@ router.delete('/:id/members/:userId', authenticate, async (req: AuthRequest, res
  *       200:
  *         description: Group rankings
  */
-router.get('/:id/rankings', async (req, res, next) => {
+router.get("/:id/rankings", async (req, res, next) => {
   try {
     const { page, limit } = req.query;
     const result = await groupService.getRankings(
@@ -362,7 +423,13 @@ router.get('/:id/rankings', async (req, res, next) => {
       page ? parseInt(page as string) : undefined,
       limit ? parseInt(limit as string) : undefined
     );
-    sendSuccess(res, result.rankings, 'Rankings retrieved successfully', 200, result.meta);
+    sendSuccess(
+      res,
+      result.rankings,
+      "Rankings retrieved successfully",
+      200,
+      result.meta
+    );
   } catch (error) {
     next(error);
   }
@@ -375,7 +442,7 @@ router.get('/:id/rankings', async (req, res, next) => {
  *     summary: Get all predictions in a group
  *     tags: [Groups]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -394,20 +461,30 @@ router.get('/:id/rankings', async (req, res, next) => {
  *       200:
  *         description: List of predictions
  */
-router.get('/:id/predictions', authenticate, async (req: AuthRequest, res, next) => {
-  try {
-    const { page, limit } = req.query;
-    const result = await groupService.getGroupPredictions(
-      parseInt(req.params.id),
-      req.user!.userId,
-      page ? parseInt(page as string) : undefined,
-      limit ? parseInt(limit as string) : undefined
-    );
-    sendSuccess(res, result.predictions, 'Predictions retrieved successfully', 200, result.meta);
-  } catch (error) {
-    next(error);
+router.get(
+  "/:id/predictions",
+  authenticate,
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { page, limit } = req.query;
+      const result = await groupService.getGroupPredictions(
+        parseInt(req.params.id),
+        req.user!.userId,
+        page ? parseInt(page as string) : undefined,
+        limit ? parseInt(limit as string) : undefined
+      );
+      sendSuccess(
+        res,
+        result.predictions,
+        "Predictions retrieved successfully",
+        200,
+        result.meta
+      );
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -415,6 +492,7 @@ router.get('/:id/predictions', authenticate, async (req: AuthRequest, res, next)
  *   get:
  *     summary: Get group scoring rules
  *     tags: [Groups]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -425,7 +503,7 @@ router.get('/:id/predictions', authenticate, async (req: AuthRequest, res, next)
  *       200:
  *         description: List of scoring rules
  */
-router.get('/:id/rules', async (req, res, next) => {
+router.get("/:id/rules", async (req, res, next) => {
   try {
     const rules = await groupService.getScoringRules(parseInt(req.params.id));
     sendSuccess(res, rules);
@@ -441,7 +519,7 @@ router.get('/:id/rules', async (req, res, next) => {
  *     summary: Create a scoring rule
  *     tags: [Groups]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -465,15 +543,23 @@ router.get('/:id/rules', async (req, res, next) => {
  *     responses:
  *       201:
  *         description: Scoring rule created
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Group not found
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.post('/:id/rules', authenticate, async (req: AuthRequest, res, next) => {
+router.post("/:id/rules", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const rule = await groupService.createScoringRule(
       parseInt(req.params.id),
       req.user!.userId,
       req.body
     );
-    sendSuccess(res, rule, 'Scoring rule created successfully', 201);
+    sendSuccess(res, rule, "Scoring rule created successfully", 201);
   } catch (error) {
     next(error);
   }
@@ -486,7 +572,7 @@ router.post('/:id/rules', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Update a scoring rule
  *     tags: [Groups]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -512,20 +598,32 @@ router.post('/:id/rules', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Scoring rule updated
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Group or rule not found
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.put('/:id/rules/:ruleId', authenticate, async (req: AuthRequest, res, next) => {
-  try {
-    const rule = await groupService.updateScoringRule(
-      parseInt(req.params.id),
-      parseInt(req.params.ruleId),
-      req.user!.userId,
-      req.body
-    );
-    sendSuccess(res, rule, 'Scoring rule updated successfully');
-  } catch (error) {
-    next(error);
+router.put(
+  "/:id/rules/:ruleId",
+  authenticate,
+  async (req: AuthRequest, res, next) => {
+    try {
+      const rule = await groupService.updateScoringRule(
+        parseInt(req.params.id),
+        parseInt(req.params.ruleId),
+        req.user!.userId,
+        req.body
+      );
+      sendSuccess(res, rule, "Scoring rule updated successfully");
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -534,7 +632,7 @@ router.put('/:id/rules/:ruleId', authenticate, async (req: AuthRequest, res, nex
  *     summary: Delete a scoring rule
  *     tags: [Groups]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -549,18 +647,28 @@ router.put('/:id/rules/:ruleId', authenticate, async (req: AuthRequest, res, nex
  *     responses:
  *       200:
  *         description: Scoring rule deleted
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Group or rule not found
+ *       429:
+ *         description: Too many requests
  */
-router.delete('/:id/rules/:ruleId', authenticate, async (req: AuthRequest, res, next) => {
-  try {
-    const result = await groupService.deleteScoringRule(
-      parseInt(req.params.id),
-      parseInt(req.params.ruleId),
-      req.user!.userId
-    );
-    sendSuccess(res, result);
-  } catch (error) {
-    next(error);
+router.delete(
+  "/:id/rules/:ruleId",
+  authenticate,
+  async (req: AuthRequest, res, next) => {
+    try {
+      const result = await groupService.deleteScoringRule(
+        parseInt(req.params.id),
+        parseInt(req.params.ruleId),
+        req.user!.userId
+      );
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 export default router;

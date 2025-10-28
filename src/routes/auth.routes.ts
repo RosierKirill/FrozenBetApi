@@ -1,13 +1,13 @@
-import { Router } from 'express';
-import { AuthService } from '../services/auth.service';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { sendSuccess, sendError } from '../utils/response';
+import { Router } from "express";
+import { authenticate, AuthRequest } from "../middleware/auth";
+import { AuthService } from "../services/auth.service";
+import { sendSuccess } from "../utils/response";
 import {
-  registerSchema,
-  loginSchema,
   changePasswordSchema,
+  loginSchema,
+  registerSchema,
   updateProfileSchema,
-} from '../validators/auth.validator';
+} from "../validators/auth.validator";
 
 const router = Router();
 const authService = new AuthService();
@@ -18,6 +18,7 @@ const authService = new AuthService();
  *   post:
  *     summary: Register a new user
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -42,12 +43,18 @@ const authService = new AuthService();
  *     responses:
  *       201:
  *         description: User registered successfully
+ *       409:
+ *         description: Conflict - Email or username already exists
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.post('/register', async (req, res, next) => {
+router.post("/register", async (req, res, next) => {
   try {
     const data = registerSchema.parse(req.body);
     const result = await authService.register(data);
-    sendSuccess(res, result, 'User registered successfully', 201);
+    sendSuccess(res, result, "User registered successfully", 201);
   } catch (error) {
     next(error);
   }
@@ -59,6 +66,7 @@ router.post('/register', async (req, res, next) => {
  *   post:
  *     summary: Login user
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -76,12 +84,18 @@ router.post('/register', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Login successful
+ *       401:
+ *         description: Unauthorized - Invalid credentials
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.post('/login', async (req, res, next) => {
+router.post("/login", async (req, res, next) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
     const result = await authService.login(email, password);
-    sendSuccess(res, result, 'Login successful');
+    sendSuccess(res, result, "Login successful");
   } catch (error) {
     next(error);
   }
@@ -94,12 +108,18 @@ router.post('/login', async (req, res, next) => {
  *     summary: Get current user profile
  *     tags: [Auth]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     responses:
  *       200:
  *         description: User profile
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: User not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
+router.get("/me", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const user = await authService.getProfile(req.user!.userId);
     sendSuccess(res, user);
@@ -115,7 +135,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Update current user profile
  *     tags: [Auth]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     requestBody:
  *       required: true
  *       content:
@@ -132,12 +152,20 @@ router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Profile updated
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: User not found
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.put('/me', authenticate, async (req: AuthRequest, res, next) => {
+router.put("/me", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const data = updateProfileSchema.parse(req.body);
     const user = await authService.updateProfile(req.user!.userId, data);
-    sendSuccess(res, user, 'Profile updated successfully');
+    sendSuccess(res, user, "Profile updated successfully");
   } catch (error) {
     next(error);
   }
@@ -150,7 +178,7 @@ router.put('/me', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Change user password
  *     tags: [Auth]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     requestBody:
  *       required: true
  *       content:
@@ -168,13 +196,23 @@ router.put('/me', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Password changed
+ *       401:
+ *         description: Unauthorized - Invalid or missing token / Current password is incorrect
+ *       404:
+ *         description: User not found
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
 router.post(
-  '/change-password',
+  "/change-password",
   authenticate,
   async (req: AuthRequest, res, next) => {
     try {
-      const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+      const { currentPassword, newPassword } = changePasswordSchema.parse(
+        req.body
+      );
       const result = await authService.changePassword(
         req.user!.userId,
         currentPassword,
@@ -194,14 +232,18 @@ router.post(
  *     summary: Logout user
  *     tags: [Auth]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     responses:
  *       200:
  *         description: Logout successful
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       429:
+ *         description: Too many requests
  */
-router.post('/logout', authenticate, async (req: AuthRequest, res, next) => {
+router.post("/logout", authenticate, async (req: AuthRequest, res, next) => {
   try {
-    sendSuccess(res, { message: 'Logout successful' });
+    sendSuccess(res, { message: "Logout successful" });
   } catch (error) {
     next(error);
   }
@@ -214,15 +256,21 @@ router.post('/logout', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Refresh JWT token
  *     tags: [Auth]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     responses:
  *       200:
  *         description: Token refreshed
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: User not found
+ *       429:
+ *         description: Too many requests
  */
-router.post('/refresh', authenticate, async (req: AuthRequest, res, next) => {
+router.post("/refresh", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const result = await authService.refreshToken(req.user!.userId);
-    sendSuccess(res, result, 'Token refreshed successfully');
+    sendSuccess(res, result, "Token refreshed successfully");
   } catch (error) {
     next(error);
   }

@@ -1,7 +1,7 @@
-import { Router } from 'express';
-import { StatisticsService } from '../services/statistics.service';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { sendSuccess } from '../utils/response';
+import { Router } from "express";
+import { authenticate, AuthRequest } from "../middleware/auth";
+import { StatisticsService } from "../services/statistics.service";
+import { sendSuccess } from "../utils/response";
 
 const router = Router();
 const statisticsService = new StatisticsService();
@@ -13,12 +13,16 @@ const statisticsService = new StatisticsService();
  *     summary: Get current user statistics
  *     tags: [Statistics]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     responses:
  *       200:
  *         description: User statistics
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       429:
+ *         description: Too many requests
  */
-router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
+router.get("/me", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const stats = await statisticsService.getUserStatistics(req.user!.userId);
     sendSuccess(res, stats);
@@ -34,7 +38,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Get group statistics
  *     tags: [Statistics]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -44,8 +48,14 @@ router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Group statistics
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Group not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/groups/:id', authenticate, async (req: AuthRequest, res, next) => {
+router.get("/groups/:id", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const stats = await statisticsService.getGroupStatistics(
       parseInt(req.params.id),
@@ -76,12 +86,20 @@ router.get('/groups/:id', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Leaderboard
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Group not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/leaderboard', async (req, res, next) => {
+router.get("/leaderboard", async (req, res, next) => {
   try {
     const { competitionId, limit } = req.query;
     const leaderboard = await statisticsService.getLeaderboard({
-      competitionId: competitionId ? parseInt(competitionId as string) : undefined,
+      competitionId: competitionId
+        ? parseInt(competitionId as string)
+        : undefined,
       limit: limit ? parseInt(limit as string) : undefined,
     });
     sendSuccess(res, leaderboard);

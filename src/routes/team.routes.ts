@@ -1,7 +1,7 @@
-import { Router } from 'express';
-import { TeamService } from '../services/team.service';
-import { authenticate } from '../middleware/auth';
-import { sendSuccess } from '../utils/response';
+import { Router } from "express";
+import { authenticate } from "../middleware/auth";
+import { TeamService } from "../services/team.service";
+import { sendSuccess } from "../utils/response";
 
 const router = Router();
 const teamService = new TeamService();
@@ -12,6 +12,7 @@ const teamService = new TeamService();
  *   get:
  *     summary: Get all teams
  *     tags: [Teams]
+ *     security: []
  *     parameters:
  *       - in: query
  *         name: competitionId
@@ -28,16 +29,20 @@ const teamService = new TeamService();
  *     responses:
  *       200:
  *         description: List of teams
+ *       429:
+ *         description: Too many requests
  */
-router.get('/', async (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
     const { competitionId, page, limit } = req.query;
     const result = await teamService.getTeams({
-      competitionId: competitionId ? parseInt(competitionId as string) : undefined,
+      competitionId: competitionId
+        ? parseInt(competitionId as string)
+        : undefined,
       page: page ? parseInt(page as string) : undefined,
       limit: limit ? parseInt(limit as string) : undefined,
     });
-    sendSuccess(res, result.teams, 'Success', 200, result.meta);
+    sendSuccess(res, result.teams, "Success", 200, result.meta);
   } catch (error) {
     next(error);
   }
@@ -50,7 +55,7 @@ router.get('/', async (req, res, next) => {
  *     summary: Create a new team
  *     tags: [Teams]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     requestBody:
  *       required: true
  *       content:
@@ -72,11 +77,17 @@ router.get('/', async (req, res, next) => {
  *     responses:
  *       201:
  *         description: Team created successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.post('/', authenticate, async (req, res, next) => {
+router.post("/", authenticate, async (req, res, next) => {
   try {
     const team = await teamService.createTeam(req.body);
-    sendSuccess(res, team, 'Team created', 201);
+    sendSuccess(res, team, "Team created", 201);
   } catch (error) {
     next(error);
   }
@@ -88,6 +99,7 @@ router.post('/', authenticate, async (req, res, next) => {
  *   get:
  *     summary: Get team by ID
  *     tags: [Teams]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -97,8 +109,12 @@ router.post('/', authenticate, async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Team details
+ *       404:
+ *         description: Team not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id', async (req, res, next) => {
+router.get("/:id", async (req, res, next) => {
   try {
     const team = await teamService.getTeamById(parseInt(req.params.id));
     sendSuccess(res, team);
@@ -114,7 +130,7 @@ router.get('/:id', async (req, res, next) => {
  *     summary: Update a team
  *     tags: [Teams]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -137,10 +153,21 @@ router.get('/:id', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Team updated successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Team not found
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.put('/:id', authenticate, async (req, res, next) => {
+router.put("/:id", authenticate, async (req, res, next) => {
   try {
-    const team = await teamService.updateTeam(parseInt(req.params.id), req.body);
+    const team = await teamService.updateTeam(
+      parseInt(req.params.id),
+      req.body
+    );
     sendSuccess(res, team);
   } catch (error) {
     next(error);
@@ -154,7 +181,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
  *     summary: Delete a team
  *     tags: [Teams]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -164,8 +191,14 @@ router.put('/:id', authenticate, async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Team deleted successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Team not found
+ *       429:
+ *         description: Too many requests
  */
-router.delete('/:id', authenticate, async (req, res, next) => {
+router.delete("/:id", authenticate, async (req, res, next) => {
   try {
     const result = await teamService.deleteTeam(parseInt(req.params.id));
     sendSuccess(res, result);
@@ -180,6 +213,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
  *   get:
  *     summary: Get all matches for a team
  *     tags: [Teams]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -197,8 +231,12 @@ router.delete('/:id', authenticate, async (req, res, next) => {
  *     responses:
  *       200:
  *         description: List of matches for the team
+ *       404:
+ *         description: Team not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id/matches', async (req, res, next) => {
+router.get("/:id/matches", async (req, res, next) => {
   try {
     const { page, limit } = req.query;
     const result = await teamService.getTeamMatches(
@@ -206,7 +244,13 @@ router.get('/:id/matches', async (req, res, next) => {
       page ? parseInt(page as string) : undefined,
       limit ? parseInt(limit as string) : undefined
     );
-    sendSuccess(res, result.matches, 'Matches retrieved successfully', 200, result.meta);
+    sendSuccess(
+      res,
+      result.matches,
+      "Matches retrieved successfully",
+      200,
+      result.meta
+    );
   } catch (error) {
     next(error);
   }

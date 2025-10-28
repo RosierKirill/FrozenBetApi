@@ -1,9 +1,9 @@
-import { Router } from 'express';
-import prisma from '../config/database';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { sendSuccess } from '../utils/response';
-import { PredictionService } from '../services/prediction.service';
-import { MatchService } from '../services/match.service';
+import { Router } from "express";
+import prisma from "../config/database";
+import { authenticate, AuthRequest } from "../middleware/auth";
+import { MatchService } from "../services/match.service";
+import { PredictionService } from "../services/prediction.service";
+import { sendSuccess } from "../utils/response";
 
 const router = Router();
 const predictionService = new PredictionService();
@@ -15,6 +15,7 @@ const matchService = new MatchService();
  *   get:
  *     summary: Get all matches
  *     tags: [Matches]
+ *     security: []
  *     parameters:
  *       - in: query
  *         name: status
@@ -36,8 +37,10 @@ const matchService = new MatchService();
  *     responses:
  *       200:
  *         description: List of matches
+ *       429:
+ *         description: Too many requests
  */
-router.get('/', async (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
     const { status, competitionId, page, limit } = req.query;
     const pageNumber = page ? parseInt(page as string) : 1;
@@ -61,7 +64,7 @@ router.get('/', async (req, res, next) => {
             },
           },
         },
-        orderBy: { scheduledDate: 'asc' },
+        orderBy: { scheduledDate: "asc" },
         skip,
         take: limitNumber,
       }),
@@ -75,7 +78,7 @@ router.get('/', async (req, res, next) => {
       totalPages: Math.ceil(total / limitNumber),
     };
 
-    sendSuccess(res, matches, 'Matches retrieved successfully', 200, meta);
+    sendSuccess(res, matches, "Matches retrieved successfully", 200, meta);
   } catch (error) {
     next(error);
   }
@@ -87,6 +90,7 @@ router.get('/', async (req, res, next) => {
  *   get:
  *     summary: Get upcoming matches
  *     tags: [Matches]
+ *     security: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -99,8 +103,10 @@ router.get('/', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: List of upcoming matches
+ *       429:
+ *         description: Too many requests
  */
-router.get('/upcoming', async (req, res, next) => {
+router.get("/upcoming", async (req, res, next) => {
   try {
     const { page, limit } = req.query;
     const pageNumber = page ? parseInt(page as string) : 1;
@@ -108,7 +114,7 @@ router.get('/upcoming', async (req, res, next) => {
     const skip = (pageNumber - 1) * limitNumber;
 
     const where = {
-      status: 'scheduled',
+      status: "scheduled",
       scheduledDate: {
         gt: new Date(),
       },
@@ -122,7 +128,7 @@ router.get('/upcoming', async (req, res, next) => {
           awayTeam: true,
           competition: true,
         },
-        orderBy: { scheduledDate: 'asc' },
+        orderBy: { scheduledDate: "asc" },
         skip,
         take: limitNumber,
       }),
@@ -136,7 +142,13 @@ router.get('/upcoming', async (req, res, next) => {
       totalPages: Math.ceil(total / limitNumber),
     };
 
-    sendSuccess(res, matches, 'Upcoming matches retrieved successfully', 200, meta);
+    sendSuccess(
+      res,
+      matches,
+      "Upcoming matches retrieved successfully",
+      200,
+      meta
+    );
   } catch (error) {
     next(error);
   }
@@ -148,6 +160,7 @@ router.get('/upcoming', async (req, res, next) => {
  *   get:
  *     summary: Get live matches
  *     tags: [Matches]
+ *     security: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -160,8 +173,10 @@ router.get('/upcoming', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: List of live matches
+ *       429:
+ *         description: Too many requests
  */
-router.get('/live', async (req, res, next) => {
+router.get("/live", async (req, res, next) => {
   try {
     const { page, limit } = req.query;
     const pageNumber = page ? parseInt(page as string) : 1;
@@ -169,7 +184,7 @@ router.get('/live', async (req, res, next) => {
     const skip = (pageNumber - 1) * limitNumber;
 
     const where = {
-      status: 'live',
+      status: "live",
     };
 
     const [matches, total] = await Promise.all([
@@ -180,7 +195,7 @@ router.get('/live', async (req, res, next) => {
           awayTeam: true,
           competition: true,
         },
-        orderBy: { scheduledDate: 'desc' },
+        orderBy: { scheduledDate: "desc" },
         skip,
         take: limitNumber,
       }),
@@ -194,7 +209,7 @@ router.get('/live', async (req, res, next) => {
       totalPages: Math.ceil(total / limitNumber),
     };
 
-    sendSuccess(res, matches, 'Live matches retrieved successfully', 200, meta);
+    sendSuccess(res, matches, "Live matches retrieved successfully", 200, meta);
   } catch (error) {
     next(error);
   }
@@ -206,6 +221,7 @@ router.get('/live', async (req, res, next) => {
  *   get:
  *     summary: Get match details
  *     tags: [Matches]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -215,8 +231,12 @@ router.get('/live', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Match details
+ *       404:
+ *         description: Match not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id', async (req, res, next) => {
+router.get("/:id", async (req, res, next) => {
   try {
     const match = await prisma.match.findUnique({
       where: { id: parseInt(req.params.id) },
@@ -231,8 +251,8 @@ router.get('/:id', async (req, res, next) => {
       res.status(404).json({
         success: false,
         error: {
-          code: 'NOT_FOUND',
-          message: 'Match not found',
+          code: "NOT_FOUND",
+          message: "Match not found",
         },
       });
       return;
@@ -251,7 +271,7 @@ router.get('/:id', async (req, res, next) => {
  *     summary: Get predictions for a match in a group
  *     tags: [Matches]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: matchId
@@ -266,40 +286,53 @@ router.get('/:id', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: List of predictions
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Match or group not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:matchId/groups/:groupId/predictions', authenticate, async (req: AuthRequest, res, next) => {
-  try {
-    const predictions = await predictionService.getMatchPredictions(
-      parseInt(req.params.matchId),
-      parseInt(req.params.groupId),
-      req.user!.userId
-    );
+router.get(
+  "/:matchId/groups/:groupId/predictions",
+  authenticate,
+  async (req: AuthRequest, res, next) => {
+    try {
+      const predictions = await predictionService.getMatchPredictions(
+        parseInt(req.params.matchId),
+        parseInt(req.params.groupId),
+        req.user!.userId
+      );
 
-    sendSuccess(res, predictions);
-  } catch (error) {
-    next(error);
+      sendSuccess(res, predictions);
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
-router.post('/', authenticate, async (req, res, next) => {
+router.post("/", authenticate, async (req, res, next) => {
   try {
     const match = await matchService.createMatch(req.body);
-    sendSuccess(res, match, 'Match created successfully', 201);
+    sendSuccess(res, match, "Match created successfully", 201);
   } catch (error) {
     next(error);
   }
 });
 
-router.put('/:id', authenticate, async (req, res, next) => {
+router.put("/:id", authenticate, async (req, res, next) => {
   try {
-    const match = await matchService.updateMatch(parseInt(req.params.id), req.body);
-    sendSuccess(res, match, 'Match updated successfully');
+    const match = await matchService.updateMatch(
+      parseInt(req.params.id),
+      req.body
+    );
+    sendSuccess(res, match, "Match updated successfully");
   } catch (error) {
     next(error);
   }
 });
 
-router.delete('/:id', authenticate, async (req, res, next) => {
+router.delete("/:id", authenticate, async (req, res, next) => {
   try {
     const result = await matchService.deleteMatch(parseInt(req.params.id));
     sendSuccess(res, result);
@@ -308,7 +341,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
   }
 });
 
-router.patch('/:id/score', authenticate, async (req, res, next) => {
+router.patch("/:id/score", authenticate, async (req, res, next) => {
   try {
     const { homeScore, awayScore } = req.body;
     const match = await matchService.updateScore(
@@ -316,13 +349,13 @@ router.patch('/:id/score', authenticate, async (req, res, next) => {
       homeScore,
       awayScore
     );
-    sendSuccess(res, match, 'Score updated and points calculated');
+    sendSuccess(res, match, "Score updated and points calculated");
   } catch (error) {
     next(error);
   }
 });
 
-router.get('/finished', async (req, res, next) => {
+router.get("/finished", async (req, res, next) => {
   try {
     const matches = await matchService.getFinishedMatches();
     sendSuccess(res, matches);

@@ -1,7 +1,7 @@
-import { Router } from 'express';
-import { CompetitionService } from '../services/competition.service';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { sendSuccess } from '../utils/response';
+import { Router } from "express";
+import { authenticate } from "../middleware/auth";
+import { CompetitionService } from "../services/competition.service";
+import { sendSuccess } from "../utils/response";
 
 const router = Router();
 const competitionService = new CompetitionService();
@@ -12,6 +12,7 @@ const competitionService = new CompetitionService();
  *   get:
  *     summary: Get all competitions
  *     tags: [Competitions]
+ *     security: []
  *     parameters:
  *       - in: query
  *         name: status
@@ -29,8 +30,10 @@ const competitionService = new CompetitionService();
  *     responses:
  *       200:
  *         description: List of competitions
+ *       429:
+ *         description: Too many requests
  */
-router.get('/', async (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
     const { status, page, limit } = req.query;
     const result = await competitionService.getCompetitions({
@@ -38,7 +41,7 @@ router.get('/', async (req, res, next) => {
       page: page ? parseInt(page as string) : undefined,
       limit: limit ? parseInt(limit as string) : undefined,
     });
-    sendSuccess(res, result.competitions, 'Success', 200, result.meta);
+    sendSuccess(res, result.competitions, "Success", 200, result.meta);
   } catch (error) {
     next(error);
   }
@@ -51,7 +54,7 @@ router.get('/', async (req, res, next) => {
  *     summary: Create a new competition
  *     tags: [Competitions]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     requestBody:
  *       required: true
  *       content:
@@ -81,11 +84,17 @@ router.get('/', async (req, res, next) => {
  *     responses:
  *       201:
  *         description: Competition created successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.post('/', authenticate, async (req, res, next) => {
+router.post("/", authenticate, async (req, res, next) => {
   try {
     const competition = await competitionService.createCompetition(req.body);
-    sendSuccess(res, competition, 'Competition created', 201);
+    sendSuccess(res, competition, "Competition created", 201);
   } catch (error) {
     next(error);
   }
@@ -97,6 +106,7 @@ router.post('/', authenticate, async (req, res, next) => {
  *   get:
  *     summary: Get competition by ID
  *     tags: [Competitions]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -106,10 +116,16 @@ router.post('/', authenticate, async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Competition details
+ *       404:
+ *         description: Competition not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id', async (req, res, next) => {
+router.get("/:id", async (req, res, next) => {
   try {
-    const competition = await competitionService.getCompetitionById(parseInt(req.params.id));
+    const competition = await competitionService.getCompetitionById(
+      parseInt(req.params.id)
+    );
     sendSuccess(res, competition);
   } catch (error) {
     next(error);
@@ -123,7 +139,7 @@ router.get('/:id', async (req, res, next) => {
  *     summary: Update a competition
  *     tags: [Competitions]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -155,10 +171,21 @@ router.get('/:id', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Competition updated successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Competition not found
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.put('/:id', authenticate, async (req, res, next) => {
+router.put("/:id", authenticate, async (req, res, next) => {
   try {
-    const competition = await competitionService.updateCompetition(parseInt(req.params.id), req.body);
+    const competition = await competitionService.updateCompetition(
+      parseInt(req.params.id),
+      req.body
+    );
     sendSuccess(res, competition);
   } catch (error) {
     next(error);
@@ -172,7 +199,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
  *     summary: Delete a competition
  *     tags: [Competitions]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -182,10 +209,18 @@ router.put('/:id', authenticate, async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Competition deleted successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Competition not found
+ *       429:
+ *         description: Too many requests
  */
-router.delete('/:id', authenticate, async (req, res, next) => {
+router.delete("/:id", authenticate, async (req, res, next) => {
   try {
-    const result = await competitionService.deleteCompetition(parseInt(req.params.id));
+    const result = await competitionService.deleteCompetition(
+      parseInt(req.params.id)
+    );
     sendSuccess(res, result);
   } catch (error) {
     next(error);
@@ -198,6 +233,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
  *   get:
  *     summary: Get all matches in a competition
  *     tags: [Competitions]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -215,8 +251,12 @@ router.delete('/:id', authenticate, async (req, res, next) => {
  *     responses:
  *       200:
  *         description: List of matches
+ *       404:
+ *         description: Competition not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id/matches', async (req, res, next) => {
+router.get("/:id/matches", async (req, res, next) => {
   try {
     const { page, limit } = req.query;
     const result = await competitionService.getCompetitionMatches(
@@ -224,7 +264,13 @@ router.get('/:id/matches', async (req, res, next) => {
       page ? parseInt(page as string) : undefined,
       limit ? parseInt(limit as string) : undefined
     );
-    sendSuccess(res, result.matches, 'Matches retrieved successfully', 200, result.meta);
+    sendSuccess(
+      res,
+      result.matches,
+      "Matches retrieved successfully",
+      200,
+      result.meta
+    );
   } catch (error) {
     next(error);
   }
@@ -236,6 +282,7 @@ router.get('/:id/matches', async (req, res, next) => {
  *   get:
  *     summary: Get all teams in a competition
  *     tags: [Competitions]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -253,8 +300,12 @@ router.get('/:id/matches', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: List of teams
+ *       404:
+ *         description: Competition not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id/teams', async (req, res, next) => {
+router.get("/:id/teams", async (req, res, next) => {
   try {
     const { page, limit } = req.query;
     const result = await competitionService.getCompetitionTeams(
@@ -262,7 +313,13 @@ router.get('/:id/teams', async (req, res, next) => {
       page ? parseInt(page as string) : undefined,
       limit ? parseInt(limit as string) : undefined
     );
-    sendSuccess(res, result.teams, 'Teams retrieved successfully', 200, result.meta);
+    sendSuccess(
+      res,
+      result.teams,
+      "Teams retrieved successfully",
+      200,
+      result.meta
+    );
   } catch (error) {
     next(error);
   }
@@ -274,6 +331,7 @@ router.get('/:id/teams', async (req, res, next) => {
  *   get:
  *     summary: Get competition standings
  *     tags: [Competitions]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -283,10 +341,16 @@ router.get('/:id/teams', async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Competition standings
+ *       404:
+ *         description: Competition not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id/standings', async (req, res, next) => {
+router.get("/:id/standings", async (req, res, next) => {
   try {
-    const standings = await competitionService.getCompetitionStandings(parseInt(req.params.id));
+    const standings = await competitionService.getCompetitionStandings(
+      parseInt(req.params.id)
+    );
     sendSuccess(res, standings);
   } catch (error) {
     next(error);

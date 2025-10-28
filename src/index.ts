@@ -36,32 +36,27 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: process.env.VERCEL === "1"
-          ? "https://frozen-bet-api.vercel.app"
-          : `http://localhost:${config.port}`,
+        url:
+          process.env.VERCEL === "1"
+            ? "https://frozen-bet-api.vercel.app"
+            : `http://localhost:${config.port}`,
         description:
-          process.env.VERCEL === "1" ? "Production server" : "Development server",
+          process.env.VERCEL === "1"
+            ? "Production server"
+            : "Development server",
       },
     ],
     components: {
       securitySchemes: {
-        bearerAuth: {
+        AuthToken: {
           type: "http",
           scheme: "bearer",
           bearerFormat: "JWT",
         },
       },
     },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
   },
-  apis: [
-    __dirname + "/routes/*.ts",
-    __dirname + "/routes/*.js",
-  ],
+  apis: [__dirname + "/routes/*.ts", __dirname + "/routes/*.js"],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -82,9 +77,10 @@ app.use(
 );
 app.use(
   cors({
-    origin: process.env.VERCEL === "1"
-      ? ["https://frozen-bet-api.vercel.app", ...config.cors.origins]
-      : config.cors.origins,
+    origin:
+      process.env.VERCEL === "1"
+        ? ["https://frozen-bet-api.vercel.app", ...config.cors.origins]
+        : config.cors.origins,
     credentials: true,
   })
 );
@@ -113,15 +109,11 @@ app.use(
 
 // Explicitly serve swagger-ui assets
 app.get("/api/docs/swagger-ui.css", (_req, res) => {
-  res.sendFile(
-    require.resolve("swagger-ui-dist/swagger-ui.css")
-  );
+  res.sendFile(require.resolve("swagger-ui-dist/swagger-ui.css"));
 });
 
 app.get("/api/docs/swagger-ui-bundle.js", (_req, res) => {
-  res.sendFile(
-    require.resolve("swagger-ui-dist/swagger-ui-bundle.js")
-  );
+  res.sendFile(require.resolve("swagger-ui-dist/swagger-ui-bundle.js"));
 });
 
 app.get("/api/docs/swagger-ui-standalone-preset.js", (_req, res) => {
@@ -131,15 +123,11 @@ app.get("/api/docs/swagger-ui-standalone-preset.js", (_req, res) => {
 });
 
 app.get("/api/docs/favicon-16x16.png", (_req, res) => {
-  res.sendFile(
-    require.resolve("swagger-ui-dist/favicon-16x16.png")
-  );
+  res.sendFile(require.resolve("swagger-ui-dist/favicon-16x16.png"));
 });
 
 app.get("/api/docs/favicon-32x32.png", (_req, res) => {
-  res.sendFile(
-    require.resolve("swagger-ui-dist/favicon-32x32.png")
-  );
+  res.sendFile(require.resolve("swagger-ui-dist/favicon-32x32.png"));
 });
 
 // Health check
@@ -174,10 +162,12 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // Start server only if not in serverless environment (Vercel)
-if (process.env.VERCEL !== '1') {
+if (process.env.VERCEL !== "1") {
   app.listen(config.port, () => {
     console.log(`\n🚀 Server running on http://localhost:${config.port}`);
-    console.log(`📚 API Documentation: http://localhost:${config.port}/api/docs`);
+    console.log(
+      `📚 API Documentation: http://localhost:${config.port}/api/docs`
+    );
     console.log(`🏒 FrozenBet API - Hockey Predictions Platform`);
   });
 }

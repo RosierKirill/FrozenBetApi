@@ -1,8 +1,11 @@
-import { Router } from 'express';
-import { PredictionService } from '../services/prediction.service';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { sendSuccess } from '../utils/response';
-import { createPredictionSchema, updatePredictionSchema } from '../validators/prediction.validator';
+import { Router } from "express";
+import { authenticate, AuthRequest } from "../middleware/auth";
+import { PredictionService } from "../services/prediction.service";
+import { sendSuccess } from "../utils/response";
+import {
+  createPredictionSchema,
+  updatePredictionSchema,
+} from "../validators/prediction.validator";
 
 const router = Router();
 const predictionService = new PredictionService();
@@ -14,7 +17,7 @@ const predictionService = new PredictionService();
  *     summary: Get user's predictions
  *     tags: [Predictions]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: query
  *         name: groupId
@@ -35,8 +38,12 @@ const predictionService = new PredictionService();
  *     responses:
  *       200:
  *         description: List of predictions
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       429:
+ *         description: Too many requests
  */
-router.get('/', authenticate, async (req: AuthRequest, res, next) => {
+router.get("/", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { groupId, matchId, page, limit } = req.query;
     const result = await predictionService.getUserPredictions(
@@ -48,7 +55,13 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
         limit: limit ? parseInt(limit as string) : undefined,
       }
     );
-    sendSuccess(res, result.predictions, 'Predictions retrieved successfully', 200, result.meta);
+    sendSuccess(
+      res,
+      result.predictions,
+      "Predictions retrieved successfully",
+      200,
+      result.meta
+    );
   } catch (error) {
     next(error);
   }
@@ -61,7 +74,7 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Create a new prediction
  *     tags: [Predictions]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     requestBody:
  *       required: true
  *       content:
@@ -85,12 +98,21 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       201:
  *         description: Prediction created
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.post('/', authenticate, async (req: AuthRequest, res, next) => {
+router.post("/", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const data = createPredictionSchema.parse(req.body);
-    const prediction = await predictionService.createPrediction(req.user!.userId, data);
-    sendSuccess(res, prediction, 'Prediction created successfully', 201);
+    const prediction = await predictionService.createPrediction(
+      req.user!.userId,
+      data
+    );
+    sendSuccess(res, prediction, "Prediction created successfully", 201);
   } catch (error) {
     next(error);
   }
@@ -103,7 +125,7 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Get a specific prediction
  *     tags: [Predictions]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -113,8 +135,14 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Prediction details
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Prediction not found
+ *       429:
+ *         description: Too many requests
  */
-router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
+router.get("/:id", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const prediction = await predictionService.getPredictionById(
       parseInt(req.params.id),
@@ -133,7 +161,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Update a prediction
  *     tags: [Predictions]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -157,8 +185,16 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Prediction updated
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Prediction not found
+ *       422:
+ *         description: Validation error - Invalid input data
+ *       429:
+ *         description: Too many requests
  */
-router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
+router.put("/:id", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const data = updatePredictionSchema.parse(req.body);
     const prediction = await predictionService.updatePrediction(
@@ -166,7 +202,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
       req.user!.userId,
       data
     );
-    sendSuccess(res, prediction, 'Prediction updated successfully');
+    sendSuccess(res, prediction, "Prediction updated successfully");
   } catch (error) {
     next(error);
   }
@@ -179,7 +215,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
  *     summary: Delete a prediction
  *     tags: [Predictions]
  *     security:
- *       - bearerAuth: []
+ *       - AuthToken: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -189,8 +225,14 @@ router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
  *     responses:
  *       200:
  *         description: Prediction deleted
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: Prediction not found
+ *       429:
+ *         description: Too many requests
  */
-router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
+router.delete("/:id", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const result = await predictionService.deletePrediction(
       parseInt(req.params.id),
