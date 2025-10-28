@@ -36,8 +36,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
+        url: process.env.VERCEL === "1"
+          ? "https://frozen-bet-api.vercel.app"
           : `http://localhost:${config.port}`,
         description:
           process.env.VERCEL === "1" ? "Production server" : "Development server",
@@ -75,13 +75,16 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'"],
         scriptSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", "https://frozen-bet-api.vercel.app"],
       },
     },
   })
 );
 app.use(
   cors({
-    origin: config.cors.origins,
+    origin: process.env.VERCEL === "1"
+      ? ["https://frozen-bet-api.vercel.app", ...config.cors.origins]
+      : config.cors.origins,
     credentials: true,
   })
 );
