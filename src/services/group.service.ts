@@ -228,9 +228,13 @@ export class GroupService {
       throw new AppError(404, "NOT_FOUND", "Group not found");
     }
 
-    if (group.visibility === "private" && group.inviteCode !== inviteCode) {
-      throw new AppError(403, "FORBIDDEN", "Invalid invite code");
+    // For private groups, invite code is required
+    if (group.visibility === "private") {
+      if (!inviteCode || group.inviteCode !== inviteCode) {
+        throw new AppError(403, "FORBIDDEN", "Invalid or missing invite code");
+      }
     }
+    // For public groups, no invite code is needed
 
     // Check if already a member
     const existingMember = await prisma.groupMember.findFirst({
