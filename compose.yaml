@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-frozenbet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-frozenbet}
+      POSTGRES_DB: ${POSTGRES_DB:-frozenbet}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-frozenbet}:${POSTGRES_PASSWORD:-frozenbet}@db:5432/${POSTGRES_DB:-frozenbet}
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-frozenbet}:${POSTGRES_PASSWORD:-frozenbet}@db:5432/${POSTGRES_DB:-frozenbet}
+      PORT: 8000
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-24h}
+      REFRESH_TOKEN_EXPIRATION: ${REFRESH_TOKEN_EXPIRATION:-7d}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+volumes:
+  pgdata:

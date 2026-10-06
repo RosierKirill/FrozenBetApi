@@ -73,6 +73,36 @@ npm run build
 npm start
 ```
 
+### Docker
+
+Requires Docker with the Compose plugin. Starts a PostgreSQL database and the API, and applies Prisma migrations automatically on startup:
+
+```bash
+docker compose up -d --build
+```
+
+The API is available on `http://localhost:8000` and PostgreSQL on `localhost:5432`.
+
+Compose reads variables from `.env` (`JWT_SECRET`, `CORS_ORIGINS`, etc.). `DATABASE_URL` and `POSTGRES_URL` are set by `compose.yaml` to point to the local database. Optional variables to customize the stack:
+
+| Variable            | Default     | Description                    |
+| ------------------- | ----------- | ------------------------------ |
+| `POSTGRES_USER`     | `frozenbet` | Database user                  |
+| `POSTGRES_PASSWORD` | `frozenbet` | Database password              |
+| `POSTGRES_DB`       | `frozenbet` | Database name                  |
+| `API_PORT`          | `8000`      | Host port exposed for the API  |
+| `DB_PORT`           | `5432`      | Host port exposed for Postgres |
+
+> Set a strong `JWT_SECRET` in `.env` before any deployment; otherwise a placeholder value is used.
+
+Useful commands:
+
+```bash
+docker compose logs -f api   # Follow API logs
+docker compose down          # Stop the stack
+docker compose down -v       # Stop and delete the database volume
+```
+
 ## API Documentation
 
 Once the server is running, access the interactive API documentation at:
